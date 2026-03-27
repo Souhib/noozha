@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Nuzha — Piscine Privee a Chelles
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Site vitrine pour la location d'une piscine privee a Chelles (77500), Ile-de-France.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Runtime** : Bun
+- **Build** : Vite 8
+- **Framework** : React 19 + TypeScript
+- **CSS** : Tailwind CSS v4
+- **Linter** : oxlint
+- **Animations** : Motion
+- **i18n** : react-i18next (FR par defaut, EN, AR avec RTL)
+- **Analytics** : Umami
+- **Deploiement** : Docker + Dokploy (Oracle VPS)
 
-## React Compiler
+## Developpement
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
+bun dev          # Serveur de dev
+bun run build    # Build production
+bun run lint     # oxlint
+bun run typecheck # TypeScript
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Deploiement
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Le deploiement est automatise via Dokploy :
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- **Push sur `main`** → auto-deploy via Dokploy
+- **Compose** : `docker-compose.dokploy.yml`
+- **Port** : 31847
+- **URL** : `http://141.253.103.145:31847`
+
+### Monitoring
+
+- **Analytics** : Umami
+- **Uptime** : Uptime Kuma
+
+## Structure
+
+```
+src/
+├── components/
+│   ├── layout/      # Header, Footer
+│   └── sections/    # Hero, Experience, Gallery, Pricing, HowItWorks, Trust, Location, Contact, FAQ
+├── hooks/           # useTheme, useDirection, useLenis
+├── i18n/            # config.ts
+├── lib/             # utils.ts, analytics.ts
+├── pages/           # Home.tsx
+└── styles/          # global.css
+public/
+├── locales/{fr,en,ar}/  # Traductions
+├── images/              # Photos
+├── videos/              # Videos
+└── favicon.svg
 ```
