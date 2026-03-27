@@ -16,7 +16,7 @@ i18n
       loadPath: "/locales/{{lng}}/{{ns}}.json",
     },
     detection: {
-      order: ["querystring", "localStorage", "navigator"],
+      order: ["querystring", "localStorage"],
       caches: ["localStorage"],
     },
     interpolation: {
