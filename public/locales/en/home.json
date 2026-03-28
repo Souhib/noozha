@@ -123,6 +123,10 @@
       {
         "q": "Do you offer takeaway food?",
         "a": "Yes! Whether you're enjoying the pool and want to take home a platter, or simply ordering without a pool booking, we prepare on order mini sandwiches, mini burgers, fricassé sandwiches and many more. Contact us via WhatsApp or message to place your order and arrange the details."
+      },
+      {
+        "q": "Is alcohol allowed?",
+        "a": "No, alcohol is not permitted on the premises."
       }
     ]
   }

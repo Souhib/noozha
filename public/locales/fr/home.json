@@ -123,6 +123,10 @@
       {
         "q": "Proposez-vous de la nourriture à emporter ?",
         "a": "Oui ! Que vous veniez profiter de la piscine et souhaitiez repartir avec un plateau, ou que vous vouliez simplement commander à emporter, nous préparons sur commande des mini sandwichs, mini burgers, sandwichs fricassés et bien d'autres choses. Contactez-nous par WhatsApp ou message pour passer commande et convenir des modalités."
+      },
+      {
+        "q": "L'alcool est-il autorisé ?",
+        "a": "Non, l'alcool n'est pas autorisé sur place."
       }
     ]
   }

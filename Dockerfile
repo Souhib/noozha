@@ -1,4 +1,4 @@
-# Multi-stage build for Nuzah frontend
+# Multi-stage build for Noozha frontend
 
 # Stage 1: Build
 FROM oven/bun:1-alpine AS build

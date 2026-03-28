@@ -1,6 +1,6 @@
-# Dokploy deployment for Nuzah (piscine-chelles)
+# Dokploy deployment for Noozha (piscine-chelles)
 
-name: nuzah
+name: noozha
 
 x-logging: &default-logging
   driver: json-file
@@ -10,7 +10,7 @@ x-logging: &default-logging
 
 services:
   frontend:
-    container_name: nuzah-frontend
+    container_name: noozha-frontend
     build:
       context: .
       dockerfile: Dockerfile

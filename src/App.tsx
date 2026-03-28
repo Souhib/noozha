@@ -21,10 +21,10 @@ function AppContent() {
         <html lang={language} dir={language === "ar" ? "rtl" : "ltr"} data-theme={theme} />
         <title>
           {language === "fr"
-            ? "Nuzha — Piscine Privée à Chelles"
+            ? "Noozha — Piscine Privée à Chelles"
             : language === "ar"
               ? "نزهة — مسبح خاص في Chelles"
-              : "Nuzha — Private Pool in Chelles"}
+              : "Noozha — Private Pool in Chelles"}
         </title>
         <meta
           name="description"

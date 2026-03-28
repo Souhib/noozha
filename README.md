@@ -1,4 +1,4 @@
-# Nuzha — Piscine Privee a Chelles
+# Noozha — Piscine Privee a Chelles
 
 Site vitrine pour la location d'une piscine privee a Chelles (77500), Ile-de-France.
 
