@@ -30,8 +30,7 @@ Le deploiement est automatise via Dokploy :
 
 - **Push sur `main`** → auto-deploy via Dokploy
 - **Compose** : `docker-compose.dokploy.yml`
-- **Port** : 31847
-- **URL** : `http://141.253.103.145:31847`
+- **URL** : https://noozha.fr
 
 ### Monitoring
 
