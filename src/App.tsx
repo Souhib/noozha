@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/layout/Header";
@@ -7,6 +7,8 @@ import { Home } from "@/pages/Home";
 import { useTheme } from "@/hooks/useTheme";
 import { useDirection } from "@/hooks/useDirection";
 import { useLenis } from "@/hooks/useLenis";
+
+const Admin = lazy(() => import("@/pages/Admin"));
 
 function AppContent() {
   const { theme, toggleTheme, isNight } = useTheme();
@@ -47,6 +49,20 @@ function LoadingFallback() {
 }
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin")) {
+    return (
+      <Suspense
+        fallback={
+          <div className="h-screen bg-gray-950 flex items-center justify-center">
+            <div className="text-white">Chargement...</div>
+          </div>
+        }
+      >
+        <Admin />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<LoadingFallback />}>
       <AppContent />
