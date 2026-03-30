@@ -1,4 +1,5 @@
 const NOCODB_URL = "https://admin.noozha.fr";
+const BASE_ID = "pkvvzcx9ofxsd9s";
 const TABLE_ID = "mzj71ffifgxkigl";
 
 interface SigninResponse {
@@ -82,7 +83,7 @@ export async function createRecord(
   data: NocoDBRecord,
 ): Promise<NocoDBRecord> {
   return request<NocoDBRecord>(
-    `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records`,
+    `${NOCODB_URL}/api/v1/db/data/noco/${BASE_ID}/${TABLE_ID}`,
     {
       method: "POST",
       headers: {
@@ -99,7 +100,7 @@ export async function listRecords(
   limit = 25,
 ): Promise<NocoDBListResponse> {
   return request<NocoDBListResponse>(
-    `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records?sort=-CreatedAt&limit=${limit}`,
+    `${NOCODB_URL}/api/v1/db/data/noco/${BASE_ID}/${TABLE_ID}?sort=-CreatedAt&limit=${limit}`,
     {
       headers: { "xc-auth": token },
     },
