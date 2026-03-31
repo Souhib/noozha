@@ -43,12 +43,7 @@
   justify-content: space-between;
   align-items: center;
   height: 40px;
-  pointer-events: none;
-}
-
-.noozha-datepicker .rdp-button_previous,
-.noozha-datepicker .rdp-button_next {
-  pointer-events: auto;
+  z-index: 10;
 }
 
 .noozha-datepicker .rdp-button_previous,
