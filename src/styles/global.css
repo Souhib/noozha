@@ -1,5 +1,113 @@
 @import "tailwindcss";
 
+/* ─── Noozha Admin Date Picker ─── */
+.noozha-datepicker {
+  --rdp-accent-color: #02BAD6;
+  --rdp-accent-background-color: rgba(2, 186, 214, 0.15);
+  --rdp-day-height: 44px;
+  --rdp-day-width: 44px;
+  --rdp-day_button-height: 40px;
+  --rdp-day_button-width: 40px;
+  --rdp-selected-font: bold;
+  min-width: 360px;
+}
+
+.noozha-datepicker .rdp-month_caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0 12px;
+}
+
+.noozha-datepicker .rdp-caption_label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.noozha-datepicker .rdp-nav {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  top: 16px;
+  left: 12px;
+  right: 12px;
+}
+
+.noozha-datepicker .rdp-button_previous,
+.noozha-datepicker .rdp-button_next {
+  color: #9ca3af;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.noozha-datepicker .rdp-button_previous:hover,
+.noozha-datepicker .rdp-button_next:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+}
+
+.noozha-datepicker .rdp-weekdays {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 4px;
+}
+
+.noozha-datepicker .rdp-weekday {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  width: 42px;
+  text-align: center;
+  padding-bottom: 8px;
+}
+
+.noozha-datepicker .rdp-week {
+  display: flex;
+  justify-content: space-around;
+}
+
+.noozha-datepicker .rdp-day {
+  border-radius: 10px;
+}
+
+.noozha-datepicker .rdp-day_button {
+  color: #d1d5db;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.noozha-datepicker .rdp-day_button:hover {
+  background: rgba(2, 186, 214, 0.2);
+  color: #fff;
+}
+
+.noozha-datepicker .rdp-today .rdp-day_button {
+  color: #02BAD6;
+  font-weight: 700;
+}
+
+.noozha-datepicker .rdp-selected .rdp-day_button {
+  background: #02BAD6 !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.noozha-datepicker .rdp-outside .rdp-day_button {
+  color: #374151;
+  opacity: 0.5;
+}
+
+.noozha-datepicker .rdp-months {
+  position: relative;
+}
+
 /* ─── Design Tokens (Day Mode — default) ─── */
 @theme {
   --font-heading: "Cormorant", serif;

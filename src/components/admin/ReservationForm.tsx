@@ -102,7 +102,7 @@ function DatePickerField({
           {date ? formatDateDisplay(date) : "JJ/MM/AAAA"}
         </button>
         {open && (
-          <div className="absolute z-50 mt-2 left-0 bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/50 p-3">
+          <div className="absolute z-50 mt-2 left-0 bg-gray-900 border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/50 p-4 noozha-datepicker">
             <DayPicker
               mode="single"
               locale={fr}
@@ -113,20 +113,6 @@ function DatePickerField({
                   setDate(iso);
                 }
                 setOpen(false);
-              }}
-              classNames={{
-                months: "flex flex-col",
-                month_caption: "flex justify-center items-center mb-2",
-                caption_label: "text-sm font-medium text-gray-200",
-                nav: "flex items-center justify-between absolute top-3 left-3 right-3",
-                button_previous: "p-1 rounded-lg hover:bg-white/[0.08] text-gray-400 cursor-pointer",
-                button_next: "p-1 rounded-lg hover:bg-white/[0.08] text-gray-400 cursor-pointer",
-                weekday: "text-xs font-medium text-gray-500 w-9 h-8",
-                day: "w-9 h-9 text-sm text-gray-300 rounded-lg",
-                day_button: "w-full h-full rounded-lg hover:bg-[#02BAD6]/20 hover:text-white transition-colors cursor-pointer flex items-center justify-center",
-                selected: "!bg-[#02BAD6] !text-white",
-                today: "font-bold text-[#02BAD6]",
-                outside: "text-gray-600 opacity-50",
               }}
             />
           </div>
@@ -139,8 +125,8 @@ function DatePickerField({
 
 function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
   return (
-    <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3">
+    <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl">
+      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3 rounded-t-2xl">
         <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
           <Icon className="w-4 h-4 text-[#02BAD6]" />
         </div>
