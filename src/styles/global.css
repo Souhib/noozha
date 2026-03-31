@@ -4,12 +4,12 @@
 .noozha-datepicker {
   --rdp-accent-color: #02BAD6;
   --rdp-accent-background-color: rgba(2, 186, 214, 0.15);
-  --rdp-day-height: 44px;
-  --rdp-day-width: 44px;
-  --rdp-day_button-height: 40px;
-  --rdp-day_button-width: 40px;
+  --rdp-day-height: 48px;
+  --rdp-day-width: 48px;
+  --rdp-day_button-height: 44px;
+  --rdp-day_button-width: 44px;
   --rdp-selected-font: bold;
-  min-width: 360px;
+  min-width: 400px;
 }
 
 .noozha-datepicker .rdp-month_caption {
@@ -49,9 +49,14 @@
   color: #e5e7eb;
 }
 
+.noozha-datepicker .rdp-weekdays,
+.noozha-datepicker .rdp-week {
+  display: grid;
+  grid-template-columns: repeat(7, 48px);
+  justify-items: center;
+}
+
 .noozha-datepicker .rdp-weekdays {
-  display: flex;
-  justify-content: space-around;
   margin-bottom: 4px;
 }
 
@@ -60,18 +65,27 @@
   font-weight: 500;
   color: #6b7280;
   text-transform: uppercase;
-  width: 42px;
+  width: 48px;
   text-align: center;
   padding-bottom: 8px;
 }
 
-.noozha-datepicker .rdp-week {
+.noozha-datepicker .rdp-day {
   display: flex;
-  justify-content: space-around;
+  align-items: center;
+  justify-content: center;
+}
+
+.noozha-datepicker .rdp-day_button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .noozha-datepicker .rdp-day {
   border-radius: 10px;
+  width: 48px;
+  height: 48px;
 }
 
 .noozha-datepicker .rdp-day_button {
@@ -79,6 +93,8 @@
   font-size: 14px;
   font-weight: 500;
   border-radius: 10px;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
