@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { type NocoDBRecord, UnauthorizedError, listRecords } from "@/lib/nocodb";
+import {
+  type NocoDBRecord,
+  UnauthorizedError,
+  deleteRecord,
+  listRecords,
+} from "@/lib/nocodb";
 
 interface ReservationListProps {
   token: string;
@@ -11,7 +16,7 @@ interface ReservationListProps {
 function SkeletonRow() {
   return (
     <tr className="animate-pulse">
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 bg-gray-700 rounded w-3/4" />
         </td>
@@ -70,8 +75,9 @@ export function ReservationList({
   const [records, setRecords] = useState<NocoDBRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  useEffect(() => {
+  const loadRecords = useCallback(() => {
     setLoading(true);
     setError("");
     listRecords(token)
@@ -86,7 +92,30 @@ export function ReservationList({
         }
       })
       .finally(() => setLoading(false));
-  }, [token, onUnauthorized, refreshKey]);
+  }, [token, onUnauthorized]);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords, refreshKey]);
+
+  async function handleDelete(id: number) {
+    if (!confirm("Supprimer cette reservation ?")) return;
+    setDeletingId(id);
+    try {
+      await deleteRecord(token, id);
+      setRecords((prev) => prev.filter((r) => r.Id !== id));
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        onUnauthorized();
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Erreur lors de la suppression",
+        );
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (error) {
     return (
@@ -106,6 +135,7 @@ export function ReservationList({
                 {col}
               </th>
             ))}
+            <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-800">
@@ -118,42 +148,61 @@ export function ReservationList({
           ) : records.length === 0 ? (
             <tr>
               <td
-                colSpan={DISPLAY_COLUMNS.length}
+                colSpan={DISPLAY_COLUMNS.length + 1}
                 className="px-4 py-12 text-center text-gray-500"
               >
                 Aucune reservation
               </td>
             </tr>
           ) : (
-            records.map((record, i) => (
-              <tr
-                key={(record.Id as string | number) ?? i}
-                className="bg-gray-900 hover:bg-gray-800/50 transition-colors"
-              >
-                {DISPLAY_COLUMNS.map((col) => {
-                  const val = findField(record, col);
-                  if (col === "Statut" && typeof val === "string") {
+            records.map((record, i) => {
+              const id = record.Id as number;
+              return (
+                <tr
+                  key={id ?? i}
+                  className={cn(
+                    "bg-gray-900 hover:bg-gray-800/50 transition-colors",
+                    deletingId === id && "opacity-50",
+                  )}
+                >
+                  {DISPLAY_COLUMNS.map((col) => {
+                    const val = findField(record, col);
+                    if (col === "Statut" && typeof val === "string") {
+                      return (
+                        <td key={col} className="px-4 py-3">
+                          <StatutBadge value={val} />
+                        </td>
+                      );
+                    }
+                    if (col === "Montant" && val != null) {
+                      return (
+                        <td key={col} className="px-4 py-3 text-white">
+                          {String(val)} EUR
+                        </td>
+                      );
+                    }
                     return (
-                      <td key={col} className="px-4 py-3">
-                        <StatutBadge value={val} />
+                      <td
+                        key={col}
+                        className="px-4 py-3 text-gray-300 whitespace-nowrap"
+                      >
+                        {val != null ? String(val) : "-"}
                       </td>
                     );
-                  }
-                  if (col === "Montant" && val != null) {
-                    return (
-                      <td key={col} className="px-4 py-3 text-white">
-                        {String(val)} EUR
-                      </td>
-                    );
-                  }
-                  return (
-                    <td key={col} className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                      {val != null ? String(val) : "-"}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))
+                  })}
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(id)}
+                      disabled={deletingId === id}
+                      className="text-red-400 hover:text-red-300 text-xs font-medium disabled:opacity-50"
+                    >
+                      Supprimer
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

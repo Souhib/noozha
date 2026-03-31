@@ -95,6 +95,23 @@ export async function createRecord(
   );
 }
 
+export async function deleteRecord(
+  token: string,
+  id: number,
+): Promise<void> {
+  await request<unknown>(
+    `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "xc-auth": token,
+      },
+      body: JSON.stringify([{ Id: id }]),
+    },
+  );
+}
+
 export async function listRecords(
   token: string,
   limit = 25,
