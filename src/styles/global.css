@@ -12,26 +12,43 @@
   min-width: 400px;
 }
 
+.noozha-datepicker .rdp-months {
+  position: relative;
+}
+
+.noozha-datepicker .rdp-month {
+  position: relative;
+}
+
 .noozha-datepicker .rdp-month_caption {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 8px 0 12px;
+  height: 40px;
+  margin-bottom: 8px;
 }
 
 .noozha-datepicker .rdp-caption_label {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #e5e7eb;
 }
 
 .noozha-datepicker .rdp-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
-  position: absolute;
-  top: 16px;
-  left: 12px;
-  right: 12px;
+  align-items: center;
+  height: 40px;
+  pointer-events: none;
+}
+
+.noozha-datepicker .rdp-button_previous,
+.noozha-datepicker .rdp-button_next {
+  pointer-events: auto;
 }
 
 .noozha-datepicker .rdp-button_previous,
@@ -118,10 +135,6 @@
 .noozha-datepicker .rdp-outside .rdp-day_button {
   color: #374151;
   opacity: 0.5;
-}
-
-.noozha-datepicker .rdp-months {
-  position: relative;
 }
 
 /* ─── Design Tokens (Day Mode — default) ─── */
