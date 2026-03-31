@@ -483,18 +483,58 @@ export function ReservationForm({
 
         <SectionCard icon={ClipboardList} title="Statut & Notes">
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="acompte"
-                checked={acompteRecu}
-                onChange={(e) => setAcompteRecu(e.target.checked)}
-                className="w-4 h-4 rounded border-white/[0.08] bg-gray-800/50 text-[#02BAD6] focus:ring-[#02BAD6]/20"
-              />
-              <label htmlFor="acompte" className="text-gray-300 text-sm">
-                Acompte recu
-              </label>
-            </div>
+            <label
+              htmlFor="acompte"
+              className={cn(
+                "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-200",
+                acompteRecu
+                  ? "bg-[#02BAD6]/10 border-[#02BAD6]/30"
+                  : "bg-gray-800/30 border-white/[0.06] hover:border-white/[0.12]",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200",
+                    acompteRecu ? "bg-[#02BAD6]/20" : "bg-gray-700/50",
+                  )}
+                >
+                  <Euro
+                    className={cn(
+                      "w-4 h-4 transition-colors duration-200",
+                      acompteRecu ? "text-[#02BAD6]" : "text-gray-500",
+                    )}
+                  />
+                </div>
+                <div>
+                  <p className={cn(
+                    "text-sm font-medium transition-colors duration-200",
+                    acompteRecu ? "text-[#02BAD6]" : "text-gray-300",
+                  )}>
+                    Acompte recu
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    10 EUR via Wero / Revolut / PayPal
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  id="acompte"
+                  checked={acompteRecu}
+                  onChange={(e) => setAcompteRecu(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 rounded-full bg-gray-700 peer-checked:bg-[#02BAD6] transition-colors duration-200" />
+                <div
+                  className={cn(
+                    "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                    acompteRecu && "translate-x-5",
+                  )}
+                />
+              </div>
+            </label>
 
             <label className="block">
               <span className="text-gray-400 text-sm mb-1.5 block">Statut</span>
