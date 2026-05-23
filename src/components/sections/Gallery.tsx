@@ -37,6 +37,27 @@ const galleryItems: GalleryItem[] = [
     poster: "/images/pool-night-green.jpg",
   },
   {
+    key: "poolPurpleLabel",
+    type: "image",
+    src: "/images/pool-night-purple.jpg",
+  },
+  {
+    key: "gardenPoolNightLabel",
+    type: "video",
+    src: "/videos/garden-pool-night.mp4",
+    poster: "/images/pool-night-purple.jpg",
+  },
+  {
+    key: "gardenHammockLabel",
+    type: "image",
+    src: "/images/garden-night-purple.jpg",
+  },
+  {
+    key: "loungerNightLabel",
+    type: "image",
+    src: "/images/lounger-night.jpg",
+  },
+  {
     key: "foodLabel",
     type: "video",
     src: "/videos/food-setup.mp4",
