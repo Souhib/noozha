@@ -15,7 +15,7 @@ interface GalleryItem {
   type: "video" | "image";
   src: string;
   poster?: string;
-  featured?: boolean;
+  variant?: "wide" | "hero";
 }
 
 const galleryItems: GalleryItem[] = [
@@ -26,26 +26,16 @@ const galleryItems: GalleryItem[] = [
     poster: "/images/pool-day.jpg",
   },
   {
-    key: "nightLabel",
-    type: "video",
-    src: "/videos/pool-night.mp4",
-    poster: "/images/pool-night-cyan.jpg",
-  },
-  {
-    key: "gardenLabel",
-    type: "video",
-    src: "/videos/pool-night-green.mp4",
-    poster: "/images/pool-night-green.jpg",
-  },
-  {
     key: "poolPurpleLabel",
     type: "image",
     src: "/images/pool-night-purple.jpg",
+    variant: "wide",
   },
   {
     key: "gardenHammockLabel",
     type: "image",
     src: "/images/garden-night-purple.jpg",
+    variant: "wide",
   },
   {
     key: "loungerNightLabel",
@@ -57,7 +47,7 @@ const galleryItems: GalleryItem[] = [
     type: "video",
     src: "/videos/garden-pool-night.mp4",
     poster: "/images/garden-pool-night-poster.jpg",
-    featured: true,
+    variant: "hero",
   },
   {
     key: "foodLabel",
@@ -135,16 +125,18 @@ export function Gallery({ isNight }: GalleryProps) {
                 }}
                 className={cn(
                   "relative group rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300",
-                  item.featured
+                  item.variant === "hero"
                     ? "col-span-2 md:col-span-3 aspect-[16/9]"
-                    : "aspect-[3/4]",
+                    : item.variant === "wide"
+                      ? "aspect-[3/4] md:col-span-2 md:aspect-[3/2]"
+                      : "aspect-[3/4]",
                   isNight
                     ? "border-white/5 hover:border-[#00E5FF]/20"
                     : "border-gray-200/60 hover:border-[#02BAD6]/30 hover:shadow-xl"
                 )}
               >
                 {item.type === "video" ? (
-                  item.featured ? (
+                  item.variant === "hero" ? (
                     <div className="relative w-full h-full overflow-hidden rounded-2xl bg-black">
                       {item.poster && (
                         <img
