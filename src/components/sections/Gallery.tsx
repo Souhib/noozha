@@ -15,6 +15,7 @@ interface GalleryItem {
   type: "video" | "image";
   src: string;
   poster?: string;
+  featured?: boolean;
 }
 
 const galleryItems: GalleryItem[] = [
@@ -42,12 +43,6 @@ const galleryItems: GalleryItem[] = [
     src: "/images/pool-night-purple.jpg",
   },
   {
-    key: "gardenPoolNightLabel",
-    type: "video",
-    src: "/videos/garden-pool-night.mp4",
-    poster: "/images/pool-night-purple.jpg",
-  },
-  {
     key: "gardenHammockLabel",
     type: "image",
     src: "/images/garden-night-purple.jpg",
@@ -56,6 +51,13 @@ const galleryItems: GalleryItem[] = [
     key: "loungerNightLabel",
     type: "image",
     src: "/images/lounger-night.jpg",
+  },
+  {
+    key: "gardenPoolNightLabel",
+    type: "video",
+    src: "/videos/garden-pool-night.mp4",
+    poster: "/images/garden-pool-night-poster.jpg",
+    featured: true,
   },
   {
     key: "foodLabel",
@@ -133,6 +135,9 @@ export function Gallery({ isNight }: GalleryProps) {
                 }}
                 className={cn(
                   "relative group rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300",
+                  item.featured
+                    ? "col-span-2 md:col-span-3 aspect-[16/9]"
+                    : "aspect-[3/4]",
                   isNight
                     ? "border-white/5 hover:border-[#00E5FF]/20"
                     : "border-gray-200/60 hover:border-[#02BAD6]/30 hover:shadow-xl"
@@ -145,7 +150,7 @@ export function Gallery({ isNight }: GalleryProps) {
                     muted
                     playsInline
                     poster={item.poster}
-                    className="w-full h-auto block rounded-2xl"
+                    className="w-full h-full object-cover block rounded-2xl"
                   >
                     <source src={item.src} type="video/mp4" />
                   </video>
@@ -153,7 +158,7 @@ export function Gallery({ isNight }: GalleryProps) {
                   <img
                     src={item.src}
                     alt={t(`gallery.${item.key}`)}
-                    className="w-full h-auto block rounded-2xl"
+                    className="w-full h-full object-cover block rounded-2xl"
                     loading="lazy"
                   />
                 )}
