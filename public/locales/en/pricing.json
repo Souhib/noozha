@@ -69,16 +69,17 @@
     "title": "Homemade kitchen",
     "subtitle": "Two formulas to pick from — the whole group shares the same one.",
     "notice": "Order 48h in advance · Minimum 6 people · One formula per group",
+    "adaptable": "Menu tailored to your preferences (allergies, choices…) — let us know when ordering",
     "perPerson": "/person",
     "items": [
       {
         "name": "Sharing platters",
-        "description": "Mini-burgers, fricassés, bricks and mint tea — to share by the pool",
+        "description": "Savoury platters by chef's inspiration or on request (mini-burgers, fricassés, bricks…) + mint tea — to share by the pool",
         "price": "14"
       },
       {
         "name": "Traditional menu",
-        "description": "Starter (brick or pepper salad) + main (couscous, tajine or pizzas) + mint tea",
+        "description": "Starter + main course by chef's inspiration or on request (couscous, tajine, pizzas…) + mint tea",
         "price": "19"
       }
     ]

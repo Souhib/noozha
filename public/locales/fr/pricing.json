@@ -69,16 +69,17 @@
     "title": "Cuisine maison",
     "subtitle": "Deux formules au choix — la même pour tout le groupe.",
     "notice": "À commander 48h à l'avance · Minimum 6 personnes · Une seule formule par groupe",
+    "adaptable": "Menu adapté à vos préférences (allergies, choix…) — précisez à la commande",
     "perPerson": "/personne",
     "items": [
       {
         "name": "Plateaux à partager",
-        "description": "Mini-burgers, fricassés, bricks et thé à la menthe — à partager au bord de la piscine",
+        "description": "Plateaux salés selon l'inspiration du chef ou sur demande (mini-burgers, fricassés, bricks…) + thé à la menthe — à partager au bord de la piscine",
         "price": "14"
       },
       {
         "name": "Menu traditionnel",
-        "description": "Entrée (brick ou salade de poivrons) + plat (couscous, tajine ou pizzas) + thé à la menthe",
+        "description": "Entrée + plat principal selon l'inspiration du chef ou sur demande (couscous, tajine, pizzas…) + thé à la menthe",
         "price": "19"
       }
     ]

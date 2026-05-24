@@ -503,6 +503,16 @@ export function Pricing({ isNight }: PricingProps) {
             <Info className="w-3.5 h-3.5 flex-shrink-0" />
             {t("food.notice")}
           </div>
+
+          <div
+            className={cn(
+              "flex items-start gap-2 mt-2 text-xs",
+              isNight ? "text-amber-400/70" : "text-amber-700/70"
+            )}
+          >
+            <HeartHandshake className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            {t("food.adaptable")}
+          </div>
         </motion.div>
 
         {/* Events & Takeaway */}
