@@ -69,10 +69,12 @@ public/
 | Soirée 18h-22h | 150€ | 175€ | 200€ |
 | Nuit 22h-02h | 180€ | 210€ | 240€ |
 
-### Option repas
-- Plat: 10€/pers
-- Entrée + Plat + Dessert: 15€/pers
-- Cuisine algérienne fait maison (couscous, tajine, brick, felfel, pâtisseries, thé)
+### Formules repas (sur place)
+- 🥡 Plateaux à partager (mini-burgers, fricassés, bricks, thé à la menthe) : 14€/pers
+- 🍽️ Menu traditionnel (entrée brick/felfla + couscous/tajine/pizzas + thé à la menthe) : 19€/pers
+- Cuisine algérienne fait maison
+- Règle : une seule formule par groupe (tout le monde la même)
+- À commander 48h à l'avance, minimum 6 personnes
 
 ### Réservation
 - WhatsApp / téléphone uniquement

@@ -66,20 +66,20 @@
   "popular": "Populaire",
   "premium": "Expérience LED",
   "food": {
-    "title": "Option Repas",
-    "subtitle": "Le menu selon l'envie du chef — fait maison avec amour.",
-    "notice": "À commander 48h à l'avance · Minimum 6 personnes",
+    "title": "Cuisine maison",
+    "subtitle": "Deux formules au choix — la même pour tout le groupe.",
+    "notice": "À commander 48h à l'avance · Minimum 6 personnes · Une seule formule par groupe",
     "perPerson": "/personne",
     "items": [
       {
-        "name": "Plat",
-        "description": "Un plat fait maison, selon l'inspiration du chef",
-        "price": "10"
+        "name": "Plateaux à partager",
+        "description": "Mini-burgers, fricassés, bricks et thé à la menthe — à partager au bord de la piscine",
+        "price": "14"
       },
       {
-        "name": "Entrée + Plat + Dessert",
-        "description": "Le menu complet pour une expérience gourmande",
-        "price": "15"
+        "name": "Menu traditionnel",
+        "description": "Entrée (brick ou salade de poivrons) + plat (couscous, tajine ou pizzas) + thé à la menthe",
+        "price": "19"
       }
     ]
   },

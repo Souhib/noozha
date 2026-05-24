@@ -66,20 +66,20 @@
   "popular": "Popular",
   "premium": "LED Experience",
   "food": {
-    "title": "Meal Add-on",
-    "subtitle": "Chef's choice menu — homemade with love.",
-    "notice": "Order 48h in advance · Minimum 6 people",
+    "title": "Homemade kitchen",
+    "subtitle": "Two formulas to pick from — the whole group shares the same one.",
+    "notice": "Order 48h in advance · Minimum 6 people · One formula per group",
     "perPerson": "/person",
     "items": [
       {
-        "name": "Main course",
-        "description": "A homemade dish, inspired by the chef's mood",
-        "price": "10"
+        "name": "Sharing platters",
+        "description": "Mini-burgers, fricassés, bricks and mint tea — to share by the pool",
+        "price": "14"
       },
       {
-        "name": "Starter + Main + Dessert",
-        "description": "The full menu for a gourmet experience",
-        "price": "15"
+        "name": "Traditional menu",
+        "description": "Starter (brick or pepper salad) + main (couscous, tajine or pizzas) + mint tea",
+        "price": "19"
       }
     ]
   },
