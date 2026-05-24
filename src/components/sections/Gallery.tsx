@@ -144,16 +144,39 @@ export function Gallery({ isNight }: GalleryProps) {
                 )}
               >
                 {item.type === "video" ? (
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    poster={item.poster}
-                    className="w-full h-full object-cover block rounded-2xl"
-                  >
-                    <source src={item.src} type="video/mp4" />
-                  </video>
+                  item.featured ? (
+                    <div className="relative w-full h-full overflow-hidden rounded-2xl bg-black">
+                      {item.poster && (
+                        <img
+                          src={item.poster}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+                        />
+                      )}
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        poster={item.poster}
+                        className="relative w-full h-full object-contain"
+                      >
+                        <source src={item.src} type="video/mp4" />
+                      </video>
+                    </div>
+                  ) : (
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      poster={item.poster}
+                      className="w-full h-full object-cover block rounded-2xl"
+                    >
+                      <source src={item.src} type="video/mp4" />
+                    </video>
+                  )
                 ) : (
                   <img
                     src={item.src}
