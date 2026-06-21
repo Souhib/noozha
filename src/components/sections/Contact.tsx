@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { MessageCircle, Phone, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
-import { whatsappUrl, PHONE_TEL } from "@/lib/contact";
+import { WHATSAPP_URL, PHONE_TEL } from "@/lib/contact";
 
 interface ContactProps {
   isNight: boolean;
@@ -85,7 +85,7 @@ export function Contact({ isNight }: ContactProps) {
         >
           {/* WhatsApp Button */}
           <a
-            href={whatsappUrl(t("home:contact.whatsappMessage"))}
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackEvent("contact-whatsapp")}

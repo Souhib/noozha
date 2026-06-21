@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, Instagram } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  whatsappUrl,
+  WHATSAPP_URL,
   PHONE_DISPLAY,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -28,7 +28,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
 export function Footer({ isNight }: FooterProps) {
   const { t } = useTranslation(["common", "home"]);
   const year = new Date().getFullYear();
-  const waMsg = t("home:contact.whatsappMessage", { defaultValue: "Bonjour !" });
 
   return (
     <footer
@@ -51,7 +50,7 @@ export function Footer({ isNight }: FooterProps) {
 
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
             <a
-              href={whatsappUrl(waMsg)}
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(

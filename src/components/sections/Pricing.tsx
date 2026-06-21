@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
-import { whatsappUrl } from "@/lib/contact";
+import { WHATSAPP_URL } from "@/lib/contact";
 
 interface PricingProps {
   isNight: boolean;
@@ -60,7 +60,7 @@ const slotGradients = {
 };
 
 export function Pricing({ isNight }: PricingProps) {
-  const { t, i18n } = useTranslation("pricing");
+  const { t } = useTranslation("pricing");
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const [groupSize, setGroupSize] = useState<GroupSize>("small");
@@ -364,17 +364,7 @@ export function Pricing({ isNight }: PricingProps) {
                   {/* Book CTA */}
                   <button
                     onClick={() => {
-                      const slotName = t(`slots.${slotKey}.name`);
-                      const slotTime = t(`slots.${slotKey}.time`);
-                      const groupLabel =
-                        groups.find((g) => g.key === groupSize)?.label ?? "";
-                      const lines =
-                        i18n.language === "ar"
-                          ? `مرحباً! أود حجز المسبح.\nالفترة: ${slotName} (${slotTime})\nالمجموعة: ${groupLabel}\nالسعر: ${price}€`
-                          : i18n.language === "en"
-                            ? `Hello! I'd like to book the pool.\nSlot: ${slotName} (${slotTime})\nGroup: ${groupLabel}\nPrice: ${price}€`
-                            : `Bonjour ! Je souhaite réserver la piscine.\nCréneau : ${slotName} (${slotTime})\nGroupe : ${groupLabel}\nPrix : ${price}€`;
-                      window.open(whatsappUrl(lines), "_blank");
+                      window.open(WHATSAPP_URL, "_blank");
                     }}
                     className={cn(
                       "w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 cursor-pointer",
@@ -581,13 +571,7 @@ export function Pricing({ isNight }: PricingProps) {
 
             <button
               onClick={() => {
-                const msg =
-                  i18n.language === "ar"
-                    ? "مرحباً! أود الاستفسار عن تنظيم مناسبة خاصة بجانب المسبح."
-                    : i18n.language === "en"
-                      ? "Hello! I'd like to inquire about hosting a private event by the pool."
-                      : "Bonjour ! Je souhaite organiser un événement privé au bord de la piscine.";
-                window.open(whatsappUrl(msg), "_blank");
+                window.open(WHATSAPP_URL, "_blank");
               }}
               className={cn(
                 "mt-auto w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 cursor-pointer",
@@ -665,13 +649,7 @@ export function Pricing({ isNight }: PricingProps) {
 
             <button
               onClick={() => {
-                const msg =
-                  i18n.language === "ar"
-                    ? "مرحباً! أود تقديم طلب أطعمة للاستلام."
-                    : i18n.language === "en"
-                      ? "Hello! I'd like to place a takeaway food order."
-                      : "Bonjour ! Je souhaite passer une commande à emporter.";
-                window.open(whatsappUrl(msg), "_blank");
+                window.open(WHATSAPP_URL, "_blank");
               }}
               className={cn(
                 "mt-auto w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 cursor-pointer",
