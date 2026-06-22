@@ -61,13 +61,14 @@ public/
 
 ## Business
 
-### Créneaux (4h chacun)
+### Créneaux (4h chacun) — tarif par personne
+
 | Créneau | ≤6 pers. | 7-10 | 11-15 |
 |---------|----------|------|-------|
-| Matinée 10h-14h | 120€ | 140€ | 160€ |
-| Après-midi 14h-18h | 120€ | 140€ | 160€ |
-| Soirée 18h-22h | 150€ | 175€ | 200€ |
-| Nuit 22h-02h | 180€ | 210€ | 240€ |
+| Matinée 10h-14h | 20€/pers | 18€/pers | 17€/pers |
+| Après-midi 14h-18h | 20€/pers | 18€/pers | 17€/pers |
+| Soirée 18h-22h | 22€/pers | 20€/pers | 19€/pers |
+| Nuit 22h-02h | 24€/pers | 22€/pers | 21€/pers |
 
 ### Formules repas (sur place)
 - 🥡 Plateaux à partager (mini-burgers, fricassés, bricks…) + thé à la menthe : 14€/pers

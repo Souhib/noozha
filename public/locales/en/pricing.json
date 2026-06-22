@@ -1,7 +1,7 @@
 {
   "sectionTitle": "Pricing",
   "title": "Our packages",
-  "subtitle": "A fixed price per slot, no surprises. If there's no booking after yours, stay as long as you want.",
+  "subtitle": "Per-person rate for 4h. If there's no booking after yours, stay as long as you want.",
   "privacy": {
     "title": "Total privacy",
     "description": "No overlooking neighbours — nobody can see the pool. Perfect for moments with friends, family, or women-only groups in complete serenity.",
@@ -17,38 +17,38 @@
       "name": "Morning",
       "time": "10am – 2pm",
       "description": "Sunny swim, fresh and relaxed vibes.",
-      "small": "120",
-      "medium": "140",
-      "large": "160"
+      "small": "20",
+      "medium": "18",
+      "large": "17"
     },
     "afternoon": {
       "name": "Afternoon",
       "time": "2pm – 6pm",
       "description": "The perfect slot to make the most of the sunshine.",
-      "small": "120",
-      "medium": "140",
-      "large": "160"
+      "small": "20",
+      "medium": "18",
+      "large": "17"
     },
     "evening": {
       "name": "Evening",
       "time": "6pm – 10pm",
       "description": "Sunset vibes and the LED ambiance kicks in.",
-      "small": "150",
-      "medium": "175",
-      "large": "200",
+      "small": "22",
+      "medium": "20",
+      "large": "19",
       "popular": true
     },
     "night": {
       "name": "Night",
       "time": "10pm – 2am",
       "description": "Immersive LED experience, unique and intimate atmosphere.",
-      "small": "180",
-      "medium": "210",
-      "large": "240",
+      "small": "24",
+      "medium": "22",
+      "large": "21",
       "premium": true
     }
   },
-  "perSlot": "/ 4-hour slot",
+  "perSlot": "/pers · 4h",
   "stayLonger": "No booking after? Stay as long as you want!",
   "included": "Included in every slot",
   "features": [

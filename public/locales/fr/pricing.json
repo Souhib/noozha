@@ -1,7 +1,7 @@
 {
   "sectionTitle": "Tarifs",
   "title": "Nos formules",
-  "subtitle": "Un prix fixe par créneau, sans surprise. Si aucune réservation ne suit, restez aussi longtemps que vous le souhaitez.",
+  "subtitle": "Tarif par personne pour 4h. Si aucune réservation ne suit, restez aussi longtemps que vous le souhaitez.",
   "privacy": {
     "title": "Intimité totale",
     "description": "Aucun vis-à-vis — personne ne peut voir la piscine. Idéal pour des moments entre amis, en famille ou entre femmes en toute sérénité.",
@@ -17,38 +17,38 @@
       "name": "Matinée",
       "time": "10h – 14h",
       "description": "Baignade au soleil, ambiance fraîche et détendue.",
-      "small": "120",
-      "medium": "140",
-      "large": "160"
+      "small": "20",
+      "medium": "18",
+      "large": "17"
     },
     "afternoon": {
       "name": "Après-midi",
       "time": "14h – 18h",
       "description": "Le créneau idéal pour profiter du soleil au maximum.",
-      "small": "120",
-      "medium": "140",
-      "large": "160"
+      "small": "20",
+      "medium": "18",
+      "large": "17"
     },
     "evening": {
       "name": "Soirée",
       "time": "18h – 22h",
       "description": "Coucher de soleil et transition vers l'ambiance LED.",
-      "small": "150",
-      "medium": "175",
-      "large": "200",
+      "small": "22",
+      "medium": "20",
+      "large": "19",
       "popular": true
     },
     "night": {
       "name": "Nuit",
       "time": "22h – 02h",
       "description": "Expérience LED immersive, ambiance unique et intime.",
-      "small": "180",
-      "medium": "210",
-      "large": "240",
+      "small": "24",
+      "medium": "22",
+      "large": "21",
       "premium": true
     }
   },
-  "perSlot": "/ créneau de 4h",
+  "perSlot": "/pers · 4h",
   "stayLonger": "Pas de réservation après ? Restez sans limite !",
   "included": "Inclus dans chaque créneau",
   "features": [
