@@ -664,48 +664,18 @@ export function Pricing({ isNight }: PricingProps) {
           </motion.div>
         </div>
 
-        {/* Stay Longer + Included */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Stay Longer */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className={cn(
-              "p-6 rounded-2xl border text-center flex flex-col items-center justify-center",
-              isNight
-                ? "bg-[#00E5FF]/5 border-[#00E5FF]/10"
-                : "bg-[#E3FAFF] border-[#02BAD6]/15"
-            )}
-          >
-            <Clock
-              className={cn(
-                "w-8 h-8 mb-3",
-                isNight ? "text-[#00E5FF]" : "text-[#02BAD6]"
-              )}
-            />
-            <p
-              className={cn(
-                "text-base font-semibold",
-                isNight ? "text-white" : "text-[#0A1628]"
-              )}
-            >
-              {t("stayLonger")}
-            </p>
-          </motion.div>
-
-          {/* Included Features */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className={cn(
-              "p-6 rounded-2xl border",
-              isNight
-                ? "bg-white/[0.02] border-white/5"
-                : "bg-white border-gray-200/60"
-            )}
-          >
+        {/* Included Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className={cn(
+            "p-6 rounded-2xl border",
+            isNight
+              ? "bg-white/[0.02] border-white/5"
+              : "bg-white border-gray-200/60"
+          )}
+        >
             <h4
               className={cn(
                 "text-sm font-semibold uppercase tracking-wider mb-4",
@@ -746,7 +716,6 @@ export function Pricing({ isNight }: PricingProps) {
               ))}
             </div>
           </motion.div>
-        </div>
 
         {/* Booking & Cancellation */}
         <motion.div

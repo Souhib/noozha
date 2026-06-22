@@ -1,7 +1,7 @@
 {
   "sectionTitle": "Tarifs",
   "title": "Nos formules",
-  "subtitle": "Tarif par personne pour 4h. Si aucune réservation ne suit, restez aussi longtemps que vous le souhaitez.",
+  "subtitle": "Tarif par personne pour 4h.",
   "privacy": {
     "title": "Intimité totale",
     "description": "Aucun vis-à-vis — personne ne peut voir la piscine. Idéal pour des moments entre amis, en famille ou entre femmes en toute sérénité.",
@@ -49,7 +49,6 @@
     }
   },
   "perSlot": "/personne · 4h",
-  "stayLonger": "Pas de réservation après ? Restez sans limite !",
   "included": "Inclus dans chaque créneau",
   "features": [
     "Piscine privée 6×3m",

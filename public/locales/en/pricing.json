@@ -1,7 +1,7 @@
 {
   "sectionTitle": "Pricing",
   "title": "Our packages",
-  "subtitle": "Per-person rate for 4h. If there's no booking after yours, stay as long as you want.",
+  "subtitle": "Per-person rate for 4h.",
   "privacy": {
     "title": "Total privacy",
     "description": "No overlooking neighbours — nobody can see the pool. Perfect for moments with friends, family, or women-only groups in complete serenity.",
@@ -49,7 +49,6 @@
     }
   },
   "perSlot": "/person · 4h",
-  "stayLonger": "No booking after? Stay as long as you want!",
   "included": "Included in every slot",
   "features": [
     "Private pool 6×3m",
