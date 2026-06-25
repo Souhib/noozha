@@ -15,7 +15,10 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Clock,
+  Euro,
+  HandCoins,
   Loader2,
   Pencil,
   Sparkles,
@@ -182,6 +185,17 @@ export function Calendar({ token, onUnauthorized, refreshKey, onEdit }: Calendar
     [monday, today],
   );
 
+  const weekStats = useMemo(() => {
+    const confirmed = reservations.filter((r) => r.status === "confirmed");
+    const pending = reservations.filter((r) => r.status === "pending");
+    return {
+      revenue: confirmed.reduce((s, r) => s + Number(r.total_price), 0),
+      tips: confirmed.reduce((s, r) => s + Number(r.tip_amount), 0),
+      confirmedCount: confirmed.length,
+      pendingCount: pending.length,
+    };
+  }, [reservations]);
+
   // Touch swipe handling — basic, no library.
   const touchStartX = useRef<number | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -240,6 +254,44 @@ export function Calendar({ token, onUnauthorized, refreshKey, onEdit }: Calendar
             >
               Revenir à aujourd'hui
             </button>
+          </div>
+        )}
+
+        {!loading && reservations.length > 0 && (
+          <div
+            className={cn(
+              "mt-4 pt-4 border-t border-white/[0.06] grid gap-2.5",
+              weekStats.tips > 0
+                ? "grid-cols-2 sm:grid-cols-4"
+                : "grid-cols-3",
+            )}
+          >
+            <StatTile
+              icon={Euro}
+              label="CA confirmé"
+              value={`${weekStats.revenue.toFixed(0)} €`}
+              color="cyan"
+            />
+            <StatTile
+              icon={CircleCheck}
+              label="Confirmées"
+              value={String(weekStats.confirmedCount)}
+              color="emerald"
+            />
+            <StatTile
+              icon={Clock}
+              label="En attente"
+              value={String(weekStats.pendingCount)}
+              color="amber"
+            />
+            {weekStats.tips > 0 && (
+              <StatTile
+                icon={HandCoins}
+                label="Pourboires"
+                value={`+${weekStats.tips.toFixed(0)} €`}
+                color="emerald"
+              />
+            )}
           </div>
         )}
       </div>
@@ -701,6 +753,41 @@ function Row({
     <div className="flex items-baseline justify-between gap-3">
       <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
       <span className={cn("text-sm text-gray-300 text-right", valueClass)}>{value}</span>
+    </div>
+  );
+}
+
+const STAT_COLORS = {
+  cyan: { text: "text-[#02BAD6]", bg: "bg-[#02BAD6]/10" },
+  emerald: { text: "text-emerald-400", bg: "bg-emerald-500/10" },
+  amber: { text: "text-amber-400", bg: "bg-amber-500/10" },
+} as const;
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  color: keyof typeof STAT_COLORS;
+}) {
+  const c = STAT_COLORS[color];
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-gray-800/40 border border-white/[0.04]">
+      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", c.bg)}>
+        <Icon className={cn("w-3.5 h-3.5", c.text)} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-gray-500 leading-none">
+          {label}
+        </p>
+        <p className={cn("text-sm font-bold leading-tight mt-0.5 tabular-nums", c.text)}>
+          {value}
+        </p>
+      </div>
     </div>
   );
 }

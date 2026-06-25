@@ -178,6 +178,76 @@ function Stepper({
   );
 }
 
+/**
+ * 24h-only time input. `<input type="time">` is OS-controlled (some locales
+ * render AM/PM), so this is a text input that enforces HH:MM regardless of
+ * platform. Accepts freeform typing ("9", "9:30", "930", "9h30") and
+ * normalises on blur — invalid input reverts to the last valid value.
+ */
+function Time24Input({
+  value,
+  onChange,
+  className,
+  ariaLabel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+
+  function commit(raw: string) {
+    const cleaned = raw.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length === 0) {
+      setText(value);
+      return;
+    }
+    let h: number;
+    let m: number;
+    if (cleaned.length <= 2) {
+      h = parseInt(cleaned, 10);
+      m = 0;
+    } else if (cleaned.length === 3) {
+      h = parseInt(cleaned.slice(0, 1), 10);
+      m = parseInt(cleaned.slice(1), 10);
+    } else {
+      h = parseInt(cleaned.slice(0, 2), 10);
+      m = parseInt(cleaned.slice(2, 4), 10);
+    }
+    if (!Number.isFinite(h) || !Number.isFinite(m) || h > 23 || m > 59) {
+      setText(value);
+      return;
+    }
+    const formatted = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    setText(formatted);
+    onChange(formatted);
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+      autoComplete="off"
+      aria-label={ariaLabel}
+      value={text}
+      placeholder="HH:MM"
+      maxLength={5}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.currentTarget as HTMLInputElement).blur();
+        }
+      }}
+      className={cn("tabular-nums", className)}
+    />
+  );
+}
+
 function DatePickerField({
   date,
   setDate,
@@ -554,10 +624,10 @@ export function ReservationForm({
                 </span>
                 <div className="relative">
                   <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="time"
+                  <Time24Input
+                    ariaLabel="Heure de début (24h)"
                     value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    onChange={setStartTime}
                     className={cn(inputClass, "pl-11")}
                   />
                 </div>
@@ -566,17 +636,17 @@ export function ReservationForm({
                 <span className="text-gray-400 text-sm mb-1.5 block">Heure de fin</span>
                 <div className="relative">
                   <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="time"
+                  <Time24Input
+                    ariaLabel="Heure de fin (24h)"
                     value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
+                    onChange={setEndTime}
                     className={cn(inputClass, "pl-11")}
                   />
                 </div>
               </label>
             </div>
             <p className="text-xs text-gray-500">
-              Horaires modifiables. La catégorie tarifaire reste celle choisie ci-dessus.
+              Format 24h (ex. 14:00). Horaires modifiables — la catégorie tarifaire reste celle choisie ci-dessus.
             </p>
           </div>
         </SectionCard>
