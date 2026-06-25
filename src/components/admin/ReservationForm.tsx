@@ -248,6 +248,7 @@ export function ReservationForm({
   const [children, setChildren] = useState(0);
   const [foodFormula, setFoodFormula] = useState<FoodFormula | "">("");
   const [foodPersons, setFoodPersons] = useState(0);
+  const [foodChildren, setFoodChildren] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountReason, setDiscountReason] = useState("");
   const [depositPaid, setDepositPaid] = useState(false);
@@ -280,6 +281,7 @@ export function ReservationForm({
           children,
           food_formula: foodFormula || null,
           food_persons: foodFormula ? foodPersons : null,
+          food_children: foodFormula ? foodChildren : 0,
           discount_amount: discountAmount,
         })
         .then(setBreakdown)
@@ -289,7 +291,7 @@ export function ReservationForm({
         .finally(() => setEstimating(false));
     }, 250);
     return () => clearTimeout(handle);
-  }, [token, slot, adults, children, foodFormula, foodPersons, discountAmount, onUnauthorized]);
+  }, [token, slot, adults, children, foodFormula, foodPersons, foodChildren, discountAmount, onUnauthorized]);
 
   const tierLabel = useMemo<string>(() => {
     if (!breakdown) return "—";
@@ -307,6 +309,7 @@ export function ReservationForm({
     setChildren(0);
     setFoodFormula("");
     setFoodPersons(0);
+    setFoodChildren(0);
     setDiscountAmount(0);
     setDiscountReason("");
     setDepositPaid(false);
@@ -341,6 +344,7 @@ export function ReservationForm({
         children,
         food_formula: foodFormula || null,
         food_persons: foodFormula ? foodPersons : null,
+        food_children: foodFormula ? foodChildren : 0,
         discount_amount: discountAmount,
         discount_reason: discountReason.trim() || null,
         deposit_paid: depositPaid,
@@ -416,16 +420,15 @@ export function ReservationForm({
               </div>
             </label>
             <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Téléphone *</span>
+              <span className="text-gray-400 text-sm mb-1.5 block">Téléphone</span>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="tel"
-                  required
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
                   className={cn(inputClass, "pl-11")}
-                  placeholder="06 12 34 56 78"
+                  placeholder="06 12 34 56 78 (optionnel)"
                 />
               </div>
             </label>
@@ -539,8 +542,14 @@ export function ReservationForm({
                       type="button"
                       onClick={() => {
                         setFoodFormula(opt.v);
-                        if (!opt.v) setFoodPersons(0);
-                        else if (foodPersons === 0) setFoodPersons(adults + children);
+                        if (!opt.v) {
+                          setFoodPersons(0);
+                          setFoodChildren(0);
+                          setDepositPaid(false);
+                        } else if (foodPersons === 0) {
+                          setFoodPersons(adults + children);
+                          setFoodChildren(children);
+                        }
                       }}
                       className={cn(
                         "p-3 rounded-xl border transition-all duration-200 text-left",
@@ -558,16 +567,38 @@ export function ReservationForm({
             </div>
 
             {foodFormula && (
-              <div className="max-w-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                 <Stepper
-                  label="Nb personnes au repas"
-                  icon={Users}
-                  value={foodPersons}
-                  onChange={setFoodPersons}
+                  label="Adultes au repas"
+                  icon={User}
+                  value={Math.max(0, foodPersons - foodChildren)}
+                  onChange={(adultsMeal) => {
+                    const total = adultsMeal + foodChildren;
+                    setFoodPersons(total);
+                  }}
+                  min={0}
+                  max={30}
+                />
+                <Stepper
+                  label="Enfants au repas"
+                  icon={Baby}
+                  hint="-50% sur le repas"
+                  value={foodChildren}
+                  onChange={(childrenMeal) => {
+                    const adultsMeal = Math.max(0, foodPersons - foodChildren);
+                    setFoodChildren(childrenMeal);
+                    setFoodPersons(adultsMeal + childrenMeal);
+                  }}
                   min={0}
                   max={30}
                 />
               </div>
+            )}
+            {foodFormula && (
+              <p className="text-xs text-gray-500">
+                Total au repas : {foodPersons} personne{foodPersons !== 1 ? "s" : ""}
+                {foodChildren > 0 && ` (dont ${foodChildren} enfant${foodChildren !== 1 ? "s" : ""} à -50%)`}
+              </p>
             )}
           </div>
         </SectionCard>
@@ -605,74 +636,84 @@ export function ReservationForm({
         {/* Acompte + Statut + Notes */}
         <SectionCard icon={ClipboardList} title="Suivi">
           <div className="space-y-4">
-            <label
-              htmlFor="acompte"
-              className={cn(
-                "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-200",
-                depositPaid
-                  ? "bg-[#02BAD6]/10 border-[#02BAD6]/30"
-                  : "bg-gray-800/30 border-white/[0.06] hover:border-white/[0.12]",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div
+            {foodFormula ? (
+              <>
+                <label
+                  htmlFor="acompte"
                   className={cn(
-                    "w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200",
-                    depositPaid ? "bg-[#02BAD6]/20" : "bg-gray-700/50",
+                    "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-200",
+                    depositPaid
+                      ? "bg-[#02BAD6]/10 border-[#02BAD6]/30"
+                      : "bg-gray-800/30 border-white/[0.06] hover:border-white/[0.12]",
                   )}
                 >
-                  <Wallet
-                    className={cn(
-                      "w-4 h-4 transition-colors duration-200",
-                      depositPaid ? "text-[#02BAD6]" : "text-gray-500",
-                    )}
-                  />
-                </div>
-                <div>
-                  <p
-                    className={cn(
-                      "text-sm font-medium transition-colors duration-200",
-                      depositPaid ? "text-[#02BAD6]" : "text-gray-300",
-                    )}
-                  >
-                    Acompte reçu
-                  </p>
-                  <p className="text-xs text-gray-500">10€ pour confirmer</p>
-                </div>
-              </div>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  id="acompte"
-                  checked={depositPaid}
-                  onChange={(e) => setDepositPaid(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 rounded-full bg-gray-700 peer-checked:bg-[#02BAD6] transition-colors duration-200" />
-                <div
-                  className={cn(
-                    "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-                    depositPaid && "translate-x-5",
-                  )}
-                />
-              </div>
-            </label>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200",
+                        depositPaid ? "bg-[#02BAD6]/20" : "bg-gray-700/50",
+                      )}
+                    >
+                      <Wallet
+                        className={cn(
+                          "w-4 h-4 transition-colors duration-200",
+                          depositPaid ? "text-[#02BAD6]" : "text-gray-500",
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <p
+                        className={cn(
+                          "text-sm font-medium transition-colors duration-200",
+                          depositPaid ? "text-[#02BAD6]" : "text-gray-300",
+                        )}
+                      >
+                        Acompte reçu
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        10€ — requis car repas commandé
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      id="acompte"
+                      checked={depositPaid}
+                      onChange={(e) => setDepositPaid(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 rounded-full bg-gray-700 peer-checked:bg-[#02BAD6] transition-colors duration-200" />
+                    <div
+                      className={cn(
+                        "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                        depositPaid && "translate-x-5",
+                      )}
+                    />
+                  </div>
+                </label>
 
-            {depositPaid && (
-              <label className="block">
-                <span className="text-gray-400 text-sm mb-1.5 block">Méthode acompte</span>
-                <select
-                  value={depositMethod}
-                  onChange={(e) => setDepositMethod(e.target.value as DepositMethod)}
-                  className={selectClass}
-                >
-                  {DEPOSIT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                {depositPaid && (
+                  <label className="block">
+                    <span className="text-gray-400 text-sm mb-1.5 block">Méthode acompte</span>
+                    <select
+                      value={depositMethod}
+                      onChange={(e) => setDepositMethod(e.target.value as DepositMethod)}
+                      className={selectClass}
+                    >
+                      {DEPOSIT_METHODS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </>
+            ) : (
+              <div className="p-3 rounded-lg bg-gray-800/30 border border-white/[0.04] text-xs text-gray-500">
+                Acompte non demandé (pas de repas commandé).
+              </div>
             )}
 
             <label className="block">
@@ -761,11 +802,26 @@ export function ReservationForm({
                       {(breakdown.child_unit_price * children).toFixed(2)}€
                     </p>
                   )}
-                  {breakdown.food_total > 0 && (
-                    <p>
-                      Repas ({foodFormula ? FOOD_LABELS[foodFormula].name : ""}) :{" "}
-                      {breakdown.food_total.toFixed(2)}€
-                    </p>
+                  {breakdown.food_total > 0 && foodFormula && (
+                    <div className="space-y-0.5">
+                      <p>
+                        Repas {FOOD_LABELS[foodFormula].name} ({FOOD_LABELS[foodFormula].unit}€/pers) :
+                      </p>
+                      <p className="pl-3">
+                        {Math.max(0, foodPersons - foodChildren)} ad ×{" "}
+                        {FOOD_LABELS[foodFormula].unit}€
+                        {foodChildren > 0 && (
+                          <>
+                            {" + "}
+                            {foodChildren} enf × {(FOOD_LABELS[foodFormula].unit / 2).toFixed(2)}€
+                          </>
+                        )}
+                        {" = "}
+                        <span className="text-gray-300">
+                          {breakdown.food_total.toFixed(2)}€
+                        </span>
+                      </p>
+                    </div>
                   )}
                   {breakdown.discount > 0 && (
                     <p className="text-amber-400">

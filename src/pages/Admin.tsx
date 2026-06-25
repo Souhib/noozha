@@ -4,12 +4,13 @@ import { UnauthorizedError, api } from "@/lib/api";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { ReservationForm } from "@/components/admin/ReservationForm";
 import { ReservationList } from "@/components/admin/ReservationList";
-import { List, Loader2, LogOut, Plus, Waves } from "lucide-react";
+import { Calendar } from "@/components/admin/Calendar";
+import { CalendarDays, List, Loader2, LogOut, Plus, Waves } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 const SESSION_KEY = "noozha_admin_token";
 
-type Tab = "form" | "list";
+type Tab = "form" | "list" | "calendar";
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export default function Admin() {
 
   function handleCreated() {
     setRefreshKey((k) => k + 1);
-    setActiveTab("list");
+    setActiveTab("calendar");
   }
 
   if (checking) {
@@ -69,8 +70,9 @@ export default function Admin() {
   }
 
   const tabs: { key: Tab; label: string; icon: typeof Plus }[] = [
-    { key: "form", label: "Nouvelle réservation", icon: Plus },
-    { key: "list", label: "Réservations", icon: List },
+    { key: "calendar", label: "Calendrier", icon: CalendarDays },
+    { key: "form", label: "Nouvelle", icon: Plus },
+    { key: "list", label: "Liste", icon: List },
   ];
 
   return (
@@ -115,9 +117,24 @@ export default function Admin() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence mode="wait">
-          {activeTab === "form" ? (
+          {activeTab === "calendar" && (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Calendar
+                token={token}
+                onUnauthorized={handleUnauthorized}
+                refreshKey={refreshKey}
+              />
+            </motion.div>
+          )}
+          {activeTab === "form" && (
             <motion.div
               key="form"
               initial={{ opacity: 0, y: 8 }}
@@ -131,7 +148,8 @@ export default function Admin() {
                 onCreated={handleCreated}
               />
             </motion.div>
-          ) : (
+          )}
+          {activeTab === "list" && (
             <motion.div
               key="list"
               initial={{ opacity: 0, y: 8 }}

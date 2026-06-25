@@ -50,11 +50,23 @@ def compute_pool_price(
     return tier, adult_unit, child_unit, total
 
 
-def compute_food_price(formula: FoodFormula | None, persons: int | None) -> Decimal:
-    """Return total food cost (€) or `Decimal("0")` if no formula picked."""
+def compute_food_price(
+    formula: FoodFormula | None,
+    persons: int | None,
+    children: int | None = 0,
+) -> Decimal:
+    """Return total food cost (€) for the given formula.
+
+    `persons` is the TOTAL number of people who eat. `children` is the subset
+    that pays the child rate (50% of the adult rate, mirroring the pool grid).
+    Returns `Decimal("0")` if no formula picked or no eaters.
+    """
     if not formula or not persons or persons <= 0:
         return Decimal("0")
-    return _quantize(FOOD_PRICE_PER_PERSON[formula] * persons)
+    children = max(0, min(children or 0, persons))
+    adults = persons - children
+    unit = FOOD_PRICE_PER_PERSON[formula]
+    return _quantize(unit * adults + unit * CHILD_PRICE_RATIO * children)
 
 
 def compute_total_price(
@@ -64,6 +76,7 @@ def compute_total_price(
     children: int,
     food_formula: FoodFormula | None = None,
     food_persons: int | None = None,
+    food_children: int | None = None,
     discount: Decimal | None = None,
 ) -> dict[str, Decimal | Tier]:
     """Aggregate the full price breakdown.
@@ -72,7 +85,7 @@ def compute_total_price(
     `discount`, `total`. All numeric values are quantized to 2 decimals.
     """
     tier, adult_unit, child_unit, pool = compute_pool_price(slot, adults, children)
-    food = compute_food_price(food_formula, food_persons)
+    food = compute_food_price(food_formula, food_persons, food_children)
     discount_value = max(Decimal("0"), discount or Decimal("0"))
     total = max(Decimal("0"), _quantize(pool + food - discount_value))
     return {

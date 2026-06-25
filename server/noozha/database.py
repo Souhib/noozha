@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from fastapi import Depends
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 from sqlmodel import SQLModel
@@ -72,6 +73,29 @@ async def get_session(
 
 
 async def create_db_and_tables(engine: AsyncEngine) -> None:
-    """Idempotent `create_all`. Safe to call on every boot."""
+    """Idempotent `create_all` + the pre-Alembic ALTERs. Safe on every boot."""
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+    await _apply_pre_alembic_migrations(engine)
+
+
+async def _apply_pre_alembic_migrations(engine: AsyncEngine) -> None:
+    """Idempotent schema deltas that `create_all` cannot apply on its own
+    (it only creates missing tables; it never alters existing ones).
+
+    Every statement here MUST be `IF NOT EXISTS`/idempotent so it's safe to
+    run on every container boot. SQLite skips — its tests recreate fresh tables.
+    """
+    if "sqlite" in str(engine.url):
+        return
+
+    async with engine.begin() as conn:
+        # 2026-06-25: per-reservation food-children count (subset of food_persons
+        # paying the -50% child rate). Added without dropping the table because
+        # `create_all` already exists in prod with the old schema.
+        await conn.execute(
+            text(
+                "ALTER TABLE reservations "
+                "ADD COLUMN IF NOT EXISTS food_children INTEGER NOT NULL DEFAULT 0"
+            )
+        )

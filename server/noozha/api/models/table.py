@@ -86,6 +86,7 @@ class Reservation(BaseTable, table=True):
         ),
     )
     food_persons: int | None = Field(default=None, ge=0, le=60)
+    food_children: int = Field(default=0, ge=0, le=60)
     food_price_total: Decimal = Field(
         default=Decimal("0"),
         sa_column=Column(Numeric(10, 2), nullable=False, default=Decimal("0")),

@@ -37,6 +37,7 @@ class ReservationBase(BaseModel):
     children: int = Field(..., ge=0, le=50)
     food_formula: FoodFormula | None = None
     food_persons: int | None = Field(default=None, ge=0, le=60)
+    food_children: int = Field(default=0, ge=0, le=60)
     discount_amount: Money = Field(default=0)  # type: ignore[assignment]
     discount_reason: str | None = Field(default=None, max_length=500)
     deposit_paid: bool = False
@@ -63,6 +64,7 @@ class ReservationUpdate(BaseModel):
     food_formula: FoodFormula | None = None
     clear_food: bool = False  # set true to explicitly null out the food fields
     food_persons: int | None = Field(default=None, ge=0, le=60)
+    food_children: int | None = Field(default=None, ge=0, le=60)
     discount_amount: Money | None = None
     discount_reason: str | None = Field(default=None, max_length=500)
     deposit_paid: bool | None = None
@@ -91,6 +93,7 @@ class EstimateRequest(BaseModel):
     children: int = Field(..., ge=0, le=50)
     food_formula: FoodFormula | None = None
     food_persons: int | None = Field(default=None, ge=0, le=60)
+    food_children: int = Field(default=0, ge=0, le=60)
     discount_amount: Money = Field(default=0)  # type: ignore[assignment]
 
 
@@ -106,6 +109,7 @@ class ReservationResponse(BaseModel):
     base_price_pool: Money
     food_formula: FoodFormula | None
     food_persons: int | None
+    food_children: int
     food_price_total: Money
     discount_amount: Money
     discount_reason: str | None

@@ -90,12 +90,14 @@ class ReservationController:
         start_at, end_at = cls._resolve_hours(
             payload.slot, payload.date, payload.start_at, payload.end_at
         )
+        food_children = min(payload.food_children, payload.food_persons or 0)
         breakdown = compute_total_price(
             slot=payload.slot,
             adults=payload.adults,
             children=payload.children,
             food_formula=payload.food_formula,
             food_persons=payload.food_persons,
+            food_children=food_children,
             discount=payload.discount_amount,
         )
         reservation = Reservation(
@@ -109,6 +111,7 @@ class ReservationController:
             base_price_pool=breakdown["pool"],  # type: ignore[arg-type]
             food_formula=payload.food_formula,  # type: ignore[arg-type]
             food_persons=payload.food_persons,
+            food_children=food_children,
             food_price_total=breakdown["food"],  # type: ignore[arg-type]
             discount_amount=breakdown["discount"],  # type: ignore[arg-type]
             discount_reason=payload.discount_reason,
@@ -161,6 +164,17 @@ class ReservationController:
                 else reservation.food_persons
             )
         )
+        food_children = (
+            0
+            if payload.clear_food
+            else (
+                payload.food_children
+                if payload.food_children is not None
+                else reservation.food_children
+            )
+        )
+        if food_persons is not None:
+            food_children = min(food_children, food_persons)
         discount = (
             payload.discount_amount
             if payload.discount_amount is not None
@@ -176,6 +190,7 @@ class ReservationController:
             children=children,
             food_formula=food_formula,  # type: ignore[arg-type]
             food_persons=food_persons,
+            food_children=food_children,
             discount=Decimal(str(discount)),
         )
 
@@ -190,6 +205,7 @@ class ReservationController:
         reservation.children = children
         reservation.food_formula = food_formula  # type: ignore[assignment]
         reservation.food_persons = food_persons
+        reservation.food_children = food_children
         reservation.base_price_pool = breakdown["pool"]  # type: ignore[assignment]
         reservation.food_price_total = breakdown["food"]  # type: ignore[assignment]
         reservation.discount_amount = breakdown["discount"]  # type: ignore[assignment]
@@ -219,12 +235,14 @@ class ReservationController:
     # --- pricing preview ----------------------------------------------------
     @staticmethod
     def estimate(payload: EstimateRequest) -> PriceBreakdown:
+        food_children = min(payload.food_children, payload.food_persons or 0)
         breakdown = compute_total_price(
             slot=payload.slot,
             adults=payload.adults,
             children=payload.children,
             food_formula=payload.food_formula,
             food_persons=payload.food_persons,
+            food_children=food_children,
             discount=payload.discount_amount,
         )
         return PriceBreakdown(

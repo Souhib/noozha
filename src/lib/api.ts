@@ -41,6 +41,7 @@ export interface Reservation {
   base_price_pool: number;
   food_formula: FoodFormula | null;
   food_persons: number | null;
+  food_children: number;
   food_price_total: number;
   discount_amount: number;
   discount_reason: string | null;
@@ -86,6 +87,7 @@ export interface ReservationCreate {
   children: number;
   food_formula?: FoodFormula | null;
   food_persons?: number | null;
+  food_children?: number;
   discount_amount?: number;
   discount_reason?: string | null;
   deposit_paid?: boolean;
@@ -102,6 +104,7 @@ export interface EstimateRequest {
   children: number;
   food_formula?: FoodFormula | null;
   food_persons?: number | null;
+  food_children?: number;
   discount_amount?: number;
 }
 
