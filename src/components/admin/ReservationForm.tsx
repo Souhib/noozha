@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Clock,
   Euro,
+  HandCoins,
   Loader2,
   Minus,
   Moon,
@@ -276,6 +277,7 @@ export function ReservationForm({
         foodChildren: 0,
         discountAmount: 0,
         discountReason: "",
+        tipAmount: 0,
         depositPaid: false,
         depositMethod: "wero" as DepositMethod,
         status: "pending" as Status,
@@ -298,6 +300,7 @@ export function ReservationForm({
       foodChildren: initial.food_children ?? 0,
       discountAmount: Number(initial.discount_amount),
       discountReason: initial.discount_reason ?? "",
+      tipAmount: Number(initial.tip_amount),
       depositPaid: initial.deposit_paid,
       depositMethod: (initial.deposit_method ?? "wero") as DepositMethod,
       status: initial.status,
@@ -319,6 +322,7 @@ export function ReservationForm({
   const [foodChildren, setFoodChildren] = useState(seed.foodChildren);
   const [discountAmount, setDiscountAmount] = useState(seed.discountAmount);
   const [discountReason, setDiscountReason] = useState(seed.discountReason);
+  const [tipAmount, setTipAmount] = useState(seed.tipAmount);
   const [depositPaid, setDepositPaid] = useState(seed.depositPaid);
   const [depositMethod, setDepositMethod] = useState<DepositMethod>(seed.depositMethod);
   const [status, setStatus] = useState<Status>(seed.status);
@@ -351,6 +355,7 @@ export function ReservationForm({
           food_persons: foodFormula ? foodPersons : null,
           food_children: foodFormula ? foodChildren : 0,
           discount_amount: discountAmount,
+          tip_amount: tipAmount,
         })
         .then(setBreakdown)
         .catch((err) => {
@@ -359,7 +364,7 @@ export function ReservationForm({
         .finally(() => setEstimating(false));
     }, 250);
     return () => clearTimeout(handle);
-  }, [token, slot, adults, children, foodFormula, foodPersons, foodChildren, discountAmount, onUnauthorized]);
+  }, [token, slot, adults, children, foodFormula, foodPersons, foodChildren, discountAmount, tipAmount, onUnauthorized]);
 
   const tierLabel = useMemo<string>(() => {
     if (!breakdown) return "—";
@@ -381,6 +386,7 @@ export function ReservationForm({
     setFoodChildren(0);
     setDiscountAmount(0);
     setDiscountReason("");
+    setTipAmount(0);
     setDepositPaid(false);
     setDepositMethod("wero");
     setStatus("pending");
@@ -416,6 +422,7 @@ export function ReservationForm({
         food_children: foodFormula ? foodChildren : 0,
         discount_amount: discountAmount,
         discount_reason: discountReason.trim() || null,
+        tip_amount: tipAmount,
         deposit_paid: depositPaid,
         deposit_method: depositPaid ? depositMethod : null,
         status,
@@ -706,6 +713,34 @@ export function ReservationForm({
           </div>
         </SectionCard>
 
+        {/* Pourboire — typiquement renseigné après la visite */}
+        <SectionCard icon={HandCoins} title="Pourboire (optionnel)">
+          <label className="block max-w-xs">
+            <span className="text-gray-400 text-sm mb-1.5 block">
+              Montant reçu en plus (€)
+            </span>
+            <div className="relative">
+              <Euro className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/60" />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={tipAmount}
+                onChange={(e) => setTipAmount(Number(e.target.value) || 0)}
+                className={cn(
+                  inputClass,
+                  "pl-11",
+                  tipAmount > 0 && "border-emerald-500/30 bg-emerald-500/[0.03]",
+                )}
+                placeholder="0"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">
+              Ajouté au total. À remplir typiquement après la visite.
+            </p>
+          </label>
+        </SectionCard>
+
         {/* Acompte + Statut + Notes */}
         <SectionCard icon={ClipboardList} title="Suivi">
           <div className="space-y-4">
@@ -911,6 +946,11 @@ export function ReservationForm({
                   {breakdown.discount > 0 && (
                     <p className="text-amber-400">
                       Remise : −{breakdown.discount.toFixed(2)}€
+                    </p>
+                  )}
+                  {breakdown.tip > 0 && (
+                    <p className="text-emerald-400">
+                      Pourboire : +{breakdown.tip.toFixed(2)}€
                     </p>
                   )}
                 </>

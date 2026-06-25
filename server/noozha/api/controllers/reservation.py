@@ -99,6 +99,7 @@ class ReservationController:
             food_persons=payload.food_persons,
             food_children=food_children,
             discount=payload.discount_amount,
+            tip=payload.tip_amount,
         )
         reservation = Reservation(
             slot=payload.slot,  # type: ignore[arg-type]
@@ -115,6 +116,7 @@ class ReservationController:
             food_price_total=breakdown["food"],  # type: ignore[arg-type]
             discount_amount=breakdown["discount"],  # type: ignore[arg-type]
             discount_reason=payload.discount_reason,
+            tip_amount=breakdown["tip"],  # type: ignore[arg-type]
             total_price=breakdown["total"],  # type: ignore[arg-type]
             deposit_paid=payload.deposit_paid,
             deposit_method=payload.deposit_method,  # type: ignore[arg-type]
@@ -180,6 +182,11 @@ class ReservationController:
             if payload.discount_amount is not None
             else reservation.discount_amount
         )
+        tip = (
+            payload.tip_amount
+            if payload.tip_amount is not None
+            else reservation.tip_amount
+        )
 
         start_at, end_at = cls._resolve_hours(
             slot, iso_date, payload.start_at, payload.end_at
@@ -192,6 +199,7 @@ class ReservationController:
             food_persons=food_persons,
             food_children=food_children,
             discount=Decimal(str(discount)),
+            tip=Decimal(str(tip)),
         )
 
         reservation.slot = slot  # type: ignore[assignment]
@@ -211,6 +219,7 @@ class ReservationController:
         reservation.discount_amount = breakdown["discount"]  # type: ignore[assignment]
         if payload.discount_reason is not None:
             reservation.discount_reason = payload.discount_reason
+        reservation.tip_amount = breakdown["tip"]  # type: ignore[assignment]
         reservation.total_price = breakdown["total"]  # type: ignore[assignment]
         if payload.deposit_paid is not None:
             reservation.deposit_paid = payload.deposit_paid
@@ -244,6 +253,7 @@ class ReservationController:
             food_persons=payload.food_persons,
             food_children=food_children,
             discount=payload.discount_amount,
+            tip=payload.tip_amount,
         )
         return PriceBreakdown(
             tier=breakdown["tier"],  # type: ignore[arg-type]
@@ -252,5 +262,6 @@ class ReservationController:
             pool_total=breakdown["pool"],  # type: ignore[arg-type]
             food_total=breakdown["food"],  # type: ignore[arg-type]
             discount=breakdown["discount"],  # type: ignore[arg-type]
+            tip=breakdown["tip"],  # type: ignore[arg-type]
             grand_total=breakdown["total"],  # type: ignore[arg-type]
         )

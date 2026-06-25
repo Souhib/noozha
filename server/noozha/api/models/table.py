@@ -96,6 +96,10 @@ class Reservation(BaseTable, table=True):
         sa_column=Column(Numeric(10, 2), nullable=False, default=Decimal("0")),
     )
     discount_reason: str | None = Field(default=None, max_length=500)
+    tip_amount: Decimal = Field(
+        default=Decimal("0"),
+        sa_column=Column(Numeric(10, 2), nullable=False, default=Decimal("0")),
+    )
 
     total_price: Decimal = Field(
         sa_column=Column(Numeric(10, 2), nullable=False),

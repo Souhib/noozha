@@ -532,6 +532,13 @@ function DetailModal({
               valueClass="text-amber-400"
             />
           )}
+          {Number(r.tip_amount) > 0 && (
+            <Row
+              label="Pourboire"
+              value={`+${Number(r.tip_amount).toFixed(2)} €`}
+              valueClass="text-emerald-400"
+            />
+          )}
           <div className="pt-2 mt-2 border-t border-white/[0.06]">
             <Row
               label="Total"

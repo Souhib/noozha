@@ -99,3 +99,11 @@ async def _apply_pre_alembic_migrations(engine: AsyncEngine) -> None:
                 "ADD COLUMN IF NOT EXISTS food_children INTEGER NOT NULL DEFAULT 0"
             )
         )
+        # 2026-06-25: optional tip ("pour boire") recorded post-visit. Counts as
+        # revenue — folded into total_price so existing stats keep working.
+        await conn.execute(
+            text(
+                "ALTER TABLE reservations "
+                "ADD COLUMN IF NOT EXISTS tip_amount NUMERIC(10, 2) NOT NULL DEFAULT 0"
+            )
+        )
