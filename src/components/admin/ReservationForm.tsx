@@ -8,6 +8,7 @@ import {
   FOOD_LABELS,
   type FoodFormula,
   type PriceBreakdown,
+  type Reservation,
   SLOT_LABELS,
   type Slot,
   STATUS_LABELS,
@@ -37,13 +38,18 @@ import {
   User,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 interface ReservationFormProps {
   token: string;
   onUnauthorized: () => void;
-  onCreated: () => void;
+  onSaved: () => void;
+  /** When provided, the form starts in EDIT mode pre-filled from this row. */
+  initial?: Reservation;
+  /** Optional back/close handler — when set, an "Annuler" button is shown. */
+  onCancel?: () => void;
 }
 
 const SLOT_DEFAULT_HOURS: Record<Slot, { start: string; end: string }> = {
@@ -228,33 +234,95 @@ function DatePickerField({
   );
 }
 
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Extract local YYYY-MM-DD + HH:MM strings from an ISO timestamp. */
+function localParts(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 export function ReservationForm({
   token,
   onUnauthorized,
-  onCreated,
+  onSaved,
+  initial,
+  onCancel,
 }: ReservationFormProps) {
+  const isEdit = initial !== undefined;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Defaults: blank form OR snapshot of `initial` when editing.
+  const seed = useMemo(() => {
+    if (!initial) {
+      return {
+        client: "",
+        telephone: "",
+        date: "",
+        slot: "afternoon" as Slot,
+        startTime: SLOT_DEFAULT_HOURS.afternoon.start,
+        endTime: SLOT_DEFAULT_HOURS.afternoon.end,
+        adults: 6,
+        children: 0,
+        foodFormula: "" as FoodFormula | "",
+        foodPersons: 0,
+        foodChildren: 0,
+        discountAmount: 0,
+        discountReason: "",
+        depositPaid: false,
+        depositMethod: "wero" as DepositMethod,
+        status: "pending" as Status,
+        notes: "",
+      };
+    }
+    const startParts = localParts(initial.start_at);
+    const endParts = localParts(initial.end_at);
+    return {
+      client: initial.customer_name,
+      telephone: initial.customer_phone,
+      date: startParts.date,
+      slot: initial.slot,
+      startTime: startParts.time,
+      endTime: endParts.time,
+      adults: initial.adults,
+      children: initial.children,
+      foodFormula: (initial.food_formula ?? "") as FoodFormula | "",
+      foodPersons: initial.food_persons ?? 0,
+      foodChildren: initial.food_children ?? 0,
+      discountAmount: Number(initial.discount_amount),
+      discountReason: initial.discount_reason ?? "",
+      depositPaid: initial.deposit_paid,
+      depositMethod: (initial.deposit_method ?? "wero") as DepositMethod,
+      status: initial.status,
+      notes: initial.notes ?? "",
+    };
+  }, [initial]);
+
   // Form state
-  const [client, setClient] = useState("");
-  const [telephone, setTelephone] = useState("");
-  const [date, setDate] = useState("");
-  const [slot, setSlot] = useState<Slot>("afternoon");
-  const [startTime, setStartTime] = useState(SLOT_DEFAULT_HOURS.afternoon.start);
-  const [endTime, setEndTime] = useState(SLOT_DEFAULT_HOURS.afternoon.end);
-  const [adults, setAdults] = useState(6);
-  const [children, setChildren] = useState(0);
-  const [foodFormula, setFoodFormula] = useState<FoodFormula | "">("");
-  const [foodPersons, setFoodPersons] = useState(0);
-  const [foodChildren, setFoodChildren] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [discountReason, setDiscountReason] = useState("");
-  const [depositPaid, setDepositPaid] = useState(false);
-  const [depositMethod, setDepositMethod] = useState<DepositMethod>("wero");
-  const [status, setStatus] = useState<Status>("pending");
-  const [notes, setNotes] = useState("");
+  const [client, setClient] = useState(seed.client);
+  const [telephone, setTelephone] = useState(seed.telephone);
+  const [date, setDate] = useState(seed.date);
+  const [slot, setSlot] = useState<Slot>(seed.slot);
+  const [startTime, setStartTime] = useState(seed.startTime);
+  const [endTime, setEndTime] = useState(seed.endTime);
+  const [adults, setAdults] = useState(seed.adults);
+  const [children, setChildren] = useState(seed.children);
+  const [foodFormula, setFoodFormula] = useState<FoodFormula | "">(seed.foodFormula);
+  const [foodPersons, setFoodPersons] = useState(seed.foodPersons);
+  const [foodChildren, setFoodChildren] = useState(seed.foodChildren);
+  const [discountAmount, setDiscountAmount] = useState(seed.discountAmount);
+  const [discountReason, setDiscountReason] = useState(seed.discountReason);
+  const [depositPaid, setDepositPaid] = useState(seed.depositPaid);
+  const [depositMethod, setDepositMethod] = useState<DepositMethod>(seed.depositMethod);
+  const [status, setStatus] = useState<Status>(seed.status);
+  const [notes, setNotes] = useState(seed.notes);
 
   // When slot changes, reset start/end to that slot's defaults.
   const setSlotAndReset = useCallback((newSlot: Slot) => {
@@ -301,6 +369,7 @@ export function ReservationForm({
   }, [breakdown]);
 
   function resetForm() {
+    if (isEdit) return; // editing: keep values until parent unmounts
     setClient("");
     setTelephone("");
     setDate("");
@@ -353,10 +422,14 @@ export function ReservationForm({
         notes: notes.trim() || null,
       };
 
-      await api.reservations.create(token, payload);
+      if (isEdit && initial) {
+        await api.reservations.update(token, initial.id, payload);
+      } else {
+        await api.reservations.create(token, payload);
+      }
       setSuccess(true);
       resetForm();
-      onCreated();
+      onSaved();
       setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
       if (err instanceof UnauthorizedError) {
@@ -383,7 +456,7 @@ export function ReservationForm({
               className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-2"
             >
               <Check className="w-5 h-5 shrink-0" />
-              Réservation créée avec succès
+              {isEdit ? "Réservation mise à jour" : "Réservation créée avec succès"}
             </motion.div>
           )}
         </AnimatePresence>
@@ -744,27 +817,39 @@ export function ReservationForm({
           </div>
         </SectionCard>
 
-        <motion.button
-          type="submit"
-          disabled={submitting || !date}
-          whileTap={{ scale: 0.98 }}
-          className={cn(
-            "w-full bg-[#02BAD6] hover:bg-[#00d4f5] text-white font-medium rounded-xl py-3 transition-colors flex items-center justify-center gap-2",
-            (submitting || !date) && "opacity-60 cursor-not-allowed",
+        <div className="flex flex-col sm:flex-row gap-3">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-3 rounded-xl border border-white/[0.08] text-gray-300 hover:bg-white/[0.04] transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <X className="w-4 h-4" />
+              Annuler
+            </button>
           )}
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Enregistrement...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Enregistrer la réservation
-            </>
-          )}
-        </motion.button>
+          <motion.button
+            type="submit"
+            disabled={submitting || !date}
+            whileTap={{ scale: 0.98 }}
+            className={cn(
+              "flex-1 bg-[#02BAD6] hover:bg-[#00d4f5] text-white font-medium rounded-xl py-3 transition-colors flex items-center justify-center gap-2",
+              (submitting || !date) && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {isEdit ? "Enregistrer les modifications" : "Enregistrer la réservation"}
+              </>
+            )}
+          </motion.button>
+        </div>
       </form>
 
       {/* Live price preview — sticky right column on desktop */}

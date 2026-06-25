@@ -24,6 +24,7 @@ interface ReservationListProps {
   token: string;
   onUnauthorized: () => void;
   refreshKey: number;
+  onEdit: (reservation: Reservation) => void;
 }
 
 const SLOT_SHORT: Record<Reservation["slot"], string> = {
@@ -157,6 +158,7 @@ export function ReservationList({
   token,
   onUnauthorized,
   refreshKey,
+  onEdit,
 }: ReservationListProps) {
   const [rows, setRows] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -292,8 +294,9 @@ export function ReservationList({
                 rows.map((r) => (
                   <tr
                     key={r.id}
+                    onClick={() => onEdit(r)}
                     className={cn(
-                      "hover:bg-white/[0.02] transition-colors",
+                      "hover:bg-white/[0.02] transition-colors cursor-pointer",
                       deletingId === r.id && "opacity-50",
                     )}
                   >
@@ -331,9 +334,13 @@ export function ReservationList({
                     <td className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => setDeleteModalId(r.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteModalId(r.id);
+                        }}
                         disabled={deletingId === r.id}
                         className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                        title="Supprimer"
                       >
                         {deletingId === r.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

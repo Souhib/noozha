@@ -10,21 +10,28 @@ import {
   api,
 } from "@/lib/api";
 import {
+  AlertTriangle,
   CalendarDays,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Loader2,
+  Pencil,
   Sparkles,
   Sun,
   Sunset,
   Moon,
+  Trash2,
+  X,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 interface CalendarProps {
   token: string;
   onUnauthorized: () => void;
   refreshKey: number;
+  onEdit: (reservation: Reservation) => void;
 }
 
 const SLOT_ORDER: Slot[] = ["morning", "afternoon", "evening", "night"];
@@ -139,7 +146,7 @@ function bucketByDay(monday: Date, reservations: Reservation[]): DayBucket[] {
   return days;
 }
 
-export function Calendar({ token, onUnauthorized, refreshKey }: CalendarProps) {
+export function Calendar({ token, onUnauthorized, refreshKey, onEdit }: CalendarProps) {
   const [monday, setMonday] = useState(() => startOfWeek(new Date()));
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -367,9 +374,34 @@ export function Calendar({ token, onUnauthorized, refreshKey }: CalendarProps) {
       </div>
 
       {/* Detail modal */}
-      {selected && (
-        <DetailModal reservation={selected} onClose={() => setSelected(null)} />
-      )}
+      <AnimatePresence>
+        {selected && (
+          <DetailModal
+            key={selected.id}
+            reservation={selected}
+            token={token}
+            onClose={() => setSelected(null)}
+            onChanged={(updated) => {
+              if (updated) {
+                setReservations((rs) =>
+                  rs.map((r) => (r.id === updated.id ? updated : r)),
+                );
+                setSelected(updated);
+              } else {
+                // deleted
+                setReservations((rs) => rs.filter((r) => r.id !== selected.id));
+                setSelected(null);
+              }
+            }}
+            onEdit={() => {
+              const r = selected;
+              setSelected(null);
+              onEdit(r);
+            }}
+            onUnauthorized={onUnauthorized}
+          />
+        )}
+      </AnimatePresence>
 
       {loading && (
         <div className="flex justify-center py-2">
@@ -382,12 +414,61 @@ export function Calendar({ token, onUnauthorized, refreshKey }: CalendarProps) {
 
 function DetailModal({
   reservation: r,
+  token,
   onClose,
+  onChanged,
+  onEdit,
+  onUnauthorized,
 }: {
   reservation: Reservation;
+  token: string;
   onClose: () => void;
+  onChanged: (updated: Reservation | null) => void;
+  onEdit: () => void;
+  onUnauthorized: () => void;
 }) {
   const colors = STATUS_COLORS[r.status];
+  const [updatingStatus, setUpdatingStatus] = useState<Status | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  async function changeStatus(next: Status) {
+    if (next === r.status) return;
+    setActionError("");
+    setUpdatingStatus(next);
+    try {
+      const updated = await api.reservations.update(token, r.id, { status: next });
+      onChanged(updated);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onUnauthorized();
+      else if (err instanceof ApiError) setActionError(err.message);
+      else setActionError("Erreur lors du changement de statut.");
+    } finally {
+      setUpdatingStatus(null);
+    }
+  }
+
+  async function handleDelete() {
+    setActionError("");
+    setDeleting(true);
+    try {
+      await api.reservations.delete(token, r.id);
+      onChanged(null);
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onUnauthorized();
+      else if (err instanceof ApiError) setActionError(err.message);
+      else setActionError("Erreur lors de la suppression.");
+      setDeleting(false);
+    }
+  }
+
+  const statusOptions: { value: Status; label: string; icon: typeof Check }[] = [
+    { value: "pending", label: "En attente", icon: Clock },
+    { value: "confirmed", label: "Confirmer", icon: Check },
+    { value: "cancelled", label: "Annuler", icon: X },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -401,7 +482,7 @@ function DetailModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-gray-900 border border-white/[0.08] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 max-h-[90dvh] overflow-y-auto"
+        className="relative bg-gray-900 border border-white/[0.08] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 max-h-[90dvh] overflow-y-auto"
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
@@ -473,13 +554,127 @@ function DetailModal({
           )}
         </div>
 
+        {/* Status segmented control */}
+        <div className="mt-6 space-y-2">
+          <p className="text-xs text-gray-500 uppercase tracking-wider">
+            Changer le statut
+          </p>
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-gray-800/40 border border-white/[0.06]">
+            {statusOptions.map((opt) => {
+              const Icon = opt.icon;
+              const active = r.status === opt.value;
+              const loading = updatingStatus === opt.value;
+              const c = STATUS_COLORS[opt.value];
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={active || updatingStatus !== null}
+                  onClick={() => changeStatus(opt.value)}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all",
+                    active
+                      ? cn(c.pill, "border")
+                      : "text-gray-400 hover:text-white hover:bg-white/[0.04]",
+                    !active && updatingStatus !== null && "opacity-40 cursor-not-allowed",
+                  )}
+                >
+                  {loading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Icon className="w-3.5 h-3.5" />
+                  )}
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {actionError && (
+          <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+            {actionError}
+          </div>
+        )}
+
+        {/* Edit + Delete */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="px-4 py-3 rounded-xl bg-[#02BAD6]/10 border border-[#02BAD6]/30 text-[#02BAD6] hover:bg-[#02BAD6]/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <Pencil className="w-4 h-4" />
+            Modifier
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="px-4 py-3 rounded-xl border border-white/[0.08] text-gray-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full px-4 py-3 rounded-xl border border-white/[0.08] text-gray-300 hover:bg-white/[0.04] transition-colors text-sm font-medium"
+          className="mt-3 w-full px-4 py-2.5 rounded-xl text-gray-500 hover:text-gray-300 transition-colors text-sm"
         >
           Fermer
         </button>
+
+        <AnimatePresence>
+          {confirmDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/95 backdrop-blur-sm rounded-t-3xl sm:rounded-3xl p-6"
+            >
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4 mx-auto">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-1">
+                  Supprimer définitivement ?
+                </h3>
+                <p className="text-gray-400 text-sm mb-6">
+                  Pour annuler sans supprimer, utilise le bouton "Annuler" du statut.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.08] text-gray-300 hover:bg-white/[0.04] transition-colors text-sm font-medium"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Suppression...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Supprimer
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

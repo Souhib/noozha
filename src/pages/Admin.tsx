@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { UnauthorizedError, api } from "@/lib/api";
+import { type Reservation, UnauthorizedError, api } from "@/lib/api";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { ReservationForm } from "@/components/admin/ReservationForm";
 import { ReservationList } from "@/components/admin/ReservationList";
 import { Calendar } from "@/components/admin/Calendar";
-import { CalendarDays, List, Loader2, LogOut, Plus, Waves } from "lucide-react";
+import { CalendarDays, List, Loader2, LogOut, Pencil, Plus, Waves } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 const SESSION_KEY = "noozha_admin_token";
@@ -15,8 +15,9 @@ type Tab = "form" | "list" | "calendar";
 export default function Admin() {
   const [token, setToken] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("form");
+  const [activeTab, setActiveTab] = useState<Tab>("calendar");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editing, setEditing] = useState<Reservation | null>(null);
 
   // Validate any stored token by calling /me. Failure → clear + show login.
   useEffect(() => {
@@ -51,9 +52,14 @@ export default function Admin() {
     setToken(null);
   }
 
-  function handleCreated() {
+  function handleSaved() {
     setRefreshKey((k) => k + 1);
-    setActiveTab("calendar");
+    if (editing) {
+      // Closing edit overlay returns user to the tab they were on.
+      setEditing(null);
+    } else {
+      setActiveTab("calendar");
+    }
   }
 
   if (checking) {
@@ -131,6 +137,7 @@ export default function Admin() {
                 token={token}
                 onUnauthorized={handleUnauthorized}
                 refreshKey={refreshKey}
+                onEdit={setEditing}
               />
             </motion.div>
           )}
@@ -145,7 +152,7 @@ export default function Admin() {
               <ReservationForm
                 token={token}
                 onUnauthorized={handleUnauthorized}
-                onCreated={handleCreated}
+                onSaved={handleSaved}
               />
             </motion.div>
           )}
@@ -161,11 +168,52 @@ export default function Admin() {
                 token={token}
                 onUnauthorized={handleUnauthorized}
                 refreshKey={refreshKey}
+                onEdit={setEditing}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Edit overlay — covers the whole admin when editing a reservation */}
+      <AnimatePresence>
+        {editing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-gray-950/95 backdrop-blur-sm overflow-y-auto"
+          >
+            <div className="sticky top-0 z-10 bg-gray-950/90 backdrop-blur border-b border-white/[0.08]">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <Pencil className="w-4 h-4 text-[#02BAD6]" />
+                  <span className="font-medium text-sm">
+                    Modifier — {editing.customer_name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+              <ReservationForm
+                key={editing.id}
+                token={token}
+                initial={editing}
+                onUnauthorized={handleUnauthorized}
+                onSaved={handleSaved}
+                onCancel={() => setEditing(null)}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
