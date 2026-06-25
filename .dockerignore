@@ -9,3 +9,5 @@ README.md
 CLAUDE.md
 .DS_Store
 .claude
+# Backend has its own image, no need to ship its source inside the frontend container.
+server
