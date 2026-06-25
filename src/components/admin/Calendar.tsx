@@ -260,10 +260,8 @@ export function Calendar({ token, onUnauthorized, refreshKey, onEdit }: Calendar
         {!loading && reservations.length > 0 && (
           <div
             className={cn(
-              "mt-4 pt-4 border-t border-white/[0.06] grid gap-2.5",
-              weekStats.tips > 0
-                ? "grid-cols-2 sm:grid-cols-4"
-                : "grid-cols-3",
+              "mt-5 pt-5 border-t border-white/[0.06] grid grid-cols-2 gap-3",
+              weekStats.tips > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3",
             )}
           >
             <StatTile
@@ -271,6 +269,7 @@ export function Calendar({ token, onUnauthorized, refreshKey, onEdit }: Calendar
               label="CA confirmé"
               value={`${weekStats.revenue.toFixed(0)} €`}
               color="cyan"
+              hero
             />
             <StatTile
               icon={CircleCheck}
@@ -768,26 +767,45 @@ function StatTile({
   label,
   value,
   color,
+  hero = false,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   color: keyof typeof STAT_COLORS;
+  /** Full-width on mobile, bigger value font — for the headline metric (CA). */
+  hero?: boolean;
 }) {
   const c = STAT_COLORS[color];
   return (
-    <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-gray-800/40 border border-white/[0.04]">
-      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", c.bg)}>
-        <Icon className={cn("w-3.5 h-3.5", c.text)} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-gray-500 leading-none">
+    <div
+      className={cn(
+        "px-4 py-3.5 rounded-xl bg-gray-800/40 border border-white/[0.04]",
+        hero && "col-span-2 sm:col-span-1",
+      )}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className={cn(
+            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+            c.bg,
+          )}
+        >
+          <Icon className={cn("w-4 h-4", c.text)} />
+        </div>
+        <p className="text-[11px] uppercase tracking-wider text-gray-500 leading-none truncate font-medium">
           {label}
         </p>
-        <p className={cn("text-sm font-bold leading-tight mt-0.5 tabular-nums", c.text)}>
-          {value}
-        </p>
       </div>
+      <p
+        className={cn(
+          "font-bold leading-none tabular-nums",
+          hero ? "text-3xl" : "text-2xl",
+          c.text,
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
