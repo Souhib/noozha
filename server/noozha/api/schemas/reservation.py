@@ -32,7 +32,7 @@ class ReservationBase(BaseModel):
         description="Override end time. Defaults to the slot's standard hour.",
     )
     customer_name: str = Field(..., min_length=1, max_length=200)
-    customer_phone: str = Field(..., min_length=1, max_length=40)
+    customer_phone: str = Field(default="", max_length=40)
     adults: int = Field(..., ge=0, le=50)
     children: int = Field(..., ge=0, le=50)
     food_formula: FoodFormula | None = None
@@ -58,7 +58,7 @@ class ReservationUpdate(BaseModel):
     start_at: datetime | None = None
     end_at: datetime | None = None
     customer_name: str | None = Field(default=None, min_length=1, max_length=200)
-    customer_phone: str | None = Field(default=None, min_length=1, max_length=40)
+    customer_phone: str | None = Field(default=None, max_length=40)
     adults: int | None = Field(default=None, ge=0, le=50)
     children: int | None = Field(default=None, ge=0, le=50)
     food_formula: FoodFormula | None = None
