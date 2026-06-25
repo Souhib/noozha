@@ -3,27 +3,40 @@ import { cn } from "@/lib/utils";
 import { DayPicker } from "react-day-picker";
 import { fr } from "react-day-picker/locale";
 import {
-  type Column,
-  type TableSchema,
+  ApiError,
+  type DepositMethod,
+  FOOD_LABELS,
+  type FoodFormula,
+  type PriceBreakdown,
+  SLOT_LABELS,
+  type Slot,
+  STATUS_LABELS,
+  type Status,
   UnauthorizedError,
-  calculateMontant,
-  createRecord,
-  getSchema,
-} from "@/lib/nocodb";
+  api,
+} from "@/lib/api";
 import {
   AlertCircle,
-  BookOpen,
+  Baby,
   Calendar,
   Check,
-  ChevronDown,
+  ChefHat,
   ClipboardList,
   Clock,
   Euro,
   Loader2,
+  Minus,
+  Moon,
+  Percent,
   Phone,
+  Plus,
   Save,
+  Sparkles,
+  Sun,
+  Sunset,
   User,
   Users,
+  Wallet,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -33,36 +46,129 @@ interface ReservationFormProps {
   onCreated: () => void;
 }
 
-function normalize(str: string): string {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
+const SLOT_DEFAULT_HOURS: Record<Slot, { start: string; end: string }> = {
+  morning: { start: "10:00", end: "14:00" },
+  afternoon: { start: "14:00", end: "18:00" },
+  evening: { start: "18:00", end: "22:00" },
+  night: { start: "22:00", end: "02:00" },
+};
 
-function getSelectOptions(columns: Column[], title: string): string[] {
-  const col = columns.find((c) => normalize(c.title) === normalize(title));
-  if (!col?.colOptions?.options) return [];
-  return col.colOptions.options.map((o) => o.title);
-}
+const SLOT_ICONS: Record<Slot, typeof Sun> = {
+  morning: Sun,
+  afternoon: Sunset,
+  evening: Moon,
+  night: Sparkles,
+};
 
-function getColumnTitle(columns: Column[], searchTitle: string): string {
-  const col = columns.find(
-    (c) => normalize(c.title) === normalize(searchTitle),
-  );
-  return col?.title ?? searchTitle;
-}
+const DEPOSIT_METHODS: { value: DepositMethod; label: string }[] = [
+  { value: "wero", label: "Wero" },
+  { value: "revolut", label: "Revolut" },
+  { value: "paypal", label: "PayPal" },
+  { value: "cash", label: "Espèces" },
+  { value: "other", label: "Autre" },
+];
 
-interface SectionCardProps {
-  icon: React.ElementType;
-  title: string;
-  children: React.ReactNode;
-}
+const inputClass =
+  "w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 placeholder-gray-600 rounded-xl px-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors";
+
+const selectClass =
+  "w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 rounded-xl px-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors appearance-none";
 
 function formatDateDisplay(isoDate: string): string {
   if (!isoDate) return "";
   const [y, m, d] = isoDate.split("-");
   return `${d}/${m}/${y}`;
+}
+
+/** Build an ISO datetime in Europe/Paris for the given date + time. */
+function toParisIso(dateIso: string, time: string, addDays = 0): string {
+  const [y, m, d] = dateIso.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  // Construct a Date interpreted in the BROWSER local TZ. The admin is in
+  // Europe/Paris, so this matches; for other TZs the offset would shift.
+  const local = new Date(y!, (m! - 1), d! + addDays, h, mi, 0);
+  return local.toISOString();
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl">
+      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3 rounded-t-2xl">
+        <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-[#02BAD6]" />
+        </div>
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          {title}
+        </h3>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  );
+}
+
+function Stepper({
+  value,
+  onChange,
+  min = 0,
+  max = 30,
+  label,
+  icon: Icon,
+  hint,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  label: string;
+  icon: React.ElementType;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="w-4 h-4 text-gray-500" />
+        <span className="text-gray-400 text-sm">{label}</span>
+        {hint && <span className="text-gray-600 text-xs">{hint}</span>}
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          className="w-11 h-11 rounded-xl border border-white/[0.08] text-gray-300 hover:border-[#02BAD6] hover:text-[#02BAD6] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onChange(Math.max(min, Math.min(max, n)));
+          }}
+          className={cn(inputClass, "text-center font-semibold text-lg w-20")}
+        />
+        <button
+          type="button"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          className="w-11 h-11 rounded-xl border border-white/[0.08] text-gray-300 hover:border-[#02BAD6] hover:text-[#02BAD6] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function DatePickerField({
@@ -118,136 +224,94 @@ function DatePickerField({
           </div>
         )}
       </div>
-      <input type="hidden" name="date" value={date} required />
     </div>
   );
 }
-
-function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
-  return (
-    <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl">
-      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3 rounded-t-2xl">
-        <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-[#02BAD6]" />
-        </div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>
-      </div>
-      <div className="p-6">{children}</div>
-    </div>
-  );
-}
-
-const inputClass =
-  "w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 placeholder-gray-600 rounded-xl px-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors";
-
-const selectClass =
-  "w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 rounded-xl px-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors";
 
 export function ReservationForm({
   token,
   onUnauthorized,
   onCreated,
 }: ReservationFormProps) {
-  const [schema, setSchema] = useState<TableSchema | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Form state
   const [client, setClient] = useState("");
   const [telephone, setTelephone] = useState("");
   const [date, setDate] = useState("");
-  const [creneau, setCreneau] = useState("");
-  const [nbPersonnes, setNbPersonnes] = useState(1);
-  const [formule, setFormule] = useState("");
-  const [montant, setMontant] = useState(0);
-  const [montantOverride, setMontantOverride] = useState(false);
-  const [acompteRecu, setAcompteRecu] = useState(false);
-  const [statut, setStatut] = useState("");
+  const [slot, setSlot] = useState<Slot>("afternoon");
+  const [startTime, setStartTime] = useState(SLOT_DEFAULT_HOURS.afternoon.start);
+  const [endTime, setEndTime] = useState(SLOT_DEFAULT_HOURS.afternoon.end);
+  const [adults, setAdults] = useState(6);
+  const [children, setChildren] = useState(0);
+  const [foodFormula, setFoodFormula] = useState<FoodFormula | "">("");
+  const [foodPersons, setFoodPersons] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountReason, setDiscountReason] = useState("");
+  const [depositPaid, setDepositPaid] = useState(false);
+  const [depositMethod, setDepositMethod] = useState<DepositMethod>("wero");
+  const [status, setStatus] = useState<Status>("pending");
   const [notes, setNotes] = useState("");
-  const [tarifOpen, setTarifOpen] = useState(false);
 
-  const columns = schema?.columns ?? [];
-  const creneauOptions = useMemo(() => getSelectOptions(columns, "Creneau"), [columns]);
-  const formuleOptions = useMemo(() => getSelectOptions(columns, "Formule"), [columns]);
-  const statutOptions = useMemo(() => getSelectOptions(columns, "Statut"), [columns]);
+  // When slot changes, reset start/end to that slot's defaults.
+  const setSlotAndReset = useCallback((newSlot: Slot) => {
+    setSlot(newSlot);
+    setStartTime(SLOT_DEFAULT_HOURS[newSlot].start);
+    setEndTime(SLOT_DEFAULT_HOURS[newSlot].end);
+  }, []);
 
-  useEffect(() => {
-    getSchema(token)
-      .then((s) => {
-        setSchema(s);
-        const crOpts = getSelectOptions(s.columns, "Creneau");
-        const fOpts = getSelectOptions(s.columns, "Formule");
-        const sOpts = getSelectOptions(s.columns, "Statut");
-        if (crOpts[0] && !creneau) setCreneau(crOpts[0]);
-        if (fOpts[0] && !formule) setFormule(fOpts[0]);
-        if (sOpts[0] && !statut) setStatut(sOpts[0]);
-      })
-      .catch((err) => {
-        if (err instanceof UnauthorizedError) {
-          onUnauthorized();
-        } else {
-          setError("Impossible de charger le schema");
-        }
-      })
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  const recalculate = useCallback(() => {
-    if (creneau) {
-      setMontant(calculateMontant(creneau, nbPersonnes, formule));
-      setMontantOverride(false);
-    }
-  }, [creneau, nbPersonnes, formule]);
+  // Live price preview via /reservations/estimate (debounced).
+  const [breakdown, setBreakdown] = useState<PriceBreakdown | null>(null);
+  const [estimating, setEstimating] = useState(false);
 
   useEffect(() => {
-    if (!montantOverride && creneau) {
-      setMontant(calculateMontant(creneau, nbPersonnes, formule));
+    if (adults + children < 1) {
+      setBreakdown(null);
+      return;
     }
-  }, [creneau, nbPersonnes, formule, montantOverride]);
+    const handle = setTimeout(() => {
+      setEstimating(true);
+      api.reservations
+        .estimate(token, {
+          slot,
+          adults,
+          children,
+          food_formula: foodFormula || null,
+          food_persons: foodFormula ? foodPersons : null,
+          discount_amount: discountAmount,
+        })
+        .then(setBreakdown)
+        .catch((err) => {
+          if (err instanceof UnauthorizedError) onUnauthorized();
+        })
+        .finally(() => setEstimating(false));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [token, slot, adults, children, foodFormula, foodPersons, discountAmount, onUnauthorized]);
 
-  const breakdown = useMemo(() => {
-    if (!creneau) return null;
-    const c = creneau.toLowerCase();
-    const n = nbPersonnes;
-    let base = 0;
-
-    if (c.includes("journ")) {
-      if (n <= 20) base = n * 40;
-      else if (n <= 30) base = n * 35;
-      else if (n <= 40) base = n * 32;
-      else base = n * 28;
-    } else if (c.includes("nuit")) {
-      base = n <= 6 ? 180 : n <= 10 ? 210 : 240;
-    } else if (c.includes("soir")) {
-      base = n <= 6 ? 150 : n <= 10 ? 175 : 200;
-    } else if (c.includes("matin") || c.includes("apr")) {
-      base = n <= 6 ? 120 : n <= 10 ? 140 : 160;
-    }
-
-    let mealUnit = 0;
-    const f = formule.toLowerCase();
-    if (!c.includes("journ")) {
-      if (f.includes("menu complet")) mealUnit = 15;
-      else if (f.includes("plat seul")) mealUnit = 10;
-    }
-
-    const meal = mealUnit * n;
-    return { base, mealUnit, meal };
-  }, [creneau, nbPersonnes, formule]);
+  const tierLabel = useMemo<string>(() => {
+    if (!breakdown) return "—";
+    return { small: "≤6 personnes", medium: "7-10 personnes", large: "11-15 personnes" }[
+      breakdown.tier
+    ];
+  }, [breakdown]);
 
   function resetForm() {
     setClient("");
     setTelephone("");
     setDate("");
-    setCreneau(creneauOptions[0] ?? "");
-    setNbPersonnes(1);
-    setFormule(formuleOptions[0] ?? "");
-    setMontant(0);
-    setMontantOverride(false);
-    setAcompteRecu(false);
-    setStatut(statutOptions[0] ?? "");
+    setSlotAndReset("afternoon");
+    setAdults(6);
+    setChildren(0);
+    setFoodFormula("");
+    setFoodPersons(0);
+    setDiscountAmount(0);
+    setDiscountReason("");
+    setDepositPaid(false);
+    setDepositMethod("wero");
+    setStatus("pending");
     setNotes("");
   }
 
@@ -257,53 +321,35 @@ export function ReservationForm({
     setSuccess(false);
     setSubmitting(true);
 
-    const TZ = "+02:00";
-    const creneauHours: Record<string, [string, string]> = {
-      "10": ["10:00", "14:00"],
-      "14": ["14:00", "18:00"],
-      "18": ["18:00", "22:00"],
-      "22": ["22:00", "02:00"],
-    };
-
-    let startDateTime = date;
-    let endDateTime = date;
-
-    const c = creneau.toLowerCase();
-    if (c.includes("journ")) {
-      startDateTime = `${date}T10:00:00${TZ}`;
-      endDateTime = `${date}T22:00:00${TZ}`;
-    } else {
-      const hourKey = Object.keys(creneauHours).find((k) => creneau.includes(k));
-      if (hourKey) {
-        const [startH, endH] = creneauHours[hourKey];
-        startDateTime = `${date}T${startH}:00${TZ}`;
-        if (endH === "02:00") {
-          const nextDay = new Date(date);
-          nextDay.setDate(nextDay.getDate() + 1);
-          const nd = nextDay.toISOString().split("T")[0];
-          endDateTime = `${nd}T${endH}:00${TZ}`;
-        } else {
-          endDateTime = `${date}T${endH}:00${TZ}`;
-        }
-      }
-    }
-
-    const record: Record<string, unknown> = {
-      [getColumnTitle(columns, "Client")]: client,
-      [getColumnTitle(columns, "Telephone")]: telephone,
-      [getColumnTitle(columns, "Date")]: startDateTime,
-      [getColumnTitle(columns, "Fin")]: endDateTime,
-      [getColumnTitle(columns, "Creneau")]: creneau,
-      [getColumnTitle(columns, "Nb personnes")]: nbPersonnes,
-      [getColumnTitle(columns, "Formule")]: formule,
-      [getColumnTitle(columns, "Montant")]: montant,
-      [getColumnTitle(columns, "Acompte recu")]: acompteRecu,
-      [getColumnTitle(columns, "Statut")]: statut,
-      [getColumnTitle(columns, "Notes")]: notes || undefined,
-    };
-
     try {
-      await createRecord(token, record);
+      // Compare custom hours vs slot defaults — only override when different.
+      const defaults = SLOT_DEFAULT_HOURS[slot];
+      const startOverride = startTime !== defaults.start;
+      const endOverride = endTime !== defaults.end;
+      const crossesMidnight = slot === "night";
+
+      const payload = {
+        slot,
+        date,
+        ...(startOverride ? { start_at: toParisIso(date, startTime) } : {}),
+        ...(endOverride
+          ? { end_at: toParisIso(date, endTime, crossesMidnight ? 1 : 0) }
+          : {}),
+        customer_name: client.trim(),
+        customer_phone: telephone.trim(),
+        adults,
+        children,
+        food_formula: foodFormula || null,
+        food_persons: foodFormula ? foodPersons : null,
+        discount_amount: discountAmount,
+        discount_reason: discountReason.trim() || null,
+        deposit_paid: depositPaid,
+        deposit_method: depositPaid ? depositMethod : null,
+        status,
+        notes: notes.trim() || null,
+      };
+
+      await api.reservations.create(token, payload);
       setSuccess(true);
       resetForm();
       onCreated();
@@ -311,23 +357,14 @@ export function ReservationForm({
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized();
+      } else if (err instanceof ApiError) {
+        setError(err.message);
       } else {
-        setError(
-          err instanceof Error ? err.message : "Erreur lors de la creation",
-        );
+        setError("Erreur lors de la création.");
       }
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <Loader2 className="w-8 h-8 text-[#02BAD6] animate-spin" />
-        <p className="text-gray-500 text-sm">Chargement...</p>
-      </div>
-    );
   }
 
   return (
@@ -342,7 +379,7 @@ export function ReservationForm({
               className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-2"
             >
               <Check className="w-5 h-5 shrink-0" />
-              Reservation creee avec succes
+              Réservation créée avec succès
             </motion.div>
           )}
         </AnimatePresence>
@@ -361,10 +398,11 @@ export function ReservationForm({
           )}
         </AnimatePresence>
 
+        {/* Client */}
         <SectionCard icon={User} title="Informations client">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Client *</span>
+              <span className="text-gray-400 text-sm mb-1.5 block">Nom *</span>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -373,11 +411,12 @@ export function ReservationForm({
                   value={client}
                   onChange={(e) => setClient(e.target.value)}
                   className={cn(inputClass, "pl-11")}
+                  placeholder="Fatima B."
                 />
               </div>
             </label>
             <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Telephone *</span>
+              <span className="text-gray-400 text-sm mb-1.5 block">Téléphone *</span>
               <div className="relative">
                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -386,108 +425,191 @@ export function ReservationForm({
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
                   className={cn(inputClass, "pl-11")}
+                  placeholder="06 12 34 56 78"
                 />
               </div>
             </label>
           </div>
         </SectionCard>
 
-        <SectionCard icon={Calendar} title="Reservation">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Réservation : date + slot picker + horaires */}
+        <SectionCard icon={Calendar} title="Créneau">
+          <div className="space-y-5">
             <DatePickerField date={date} setDate={setDate} />
-            <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Creneau *</span>
-              <div className="relative">
-                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <select
-                  required
-                  value={creneau}
-                  onChange={(e) => setCreneau(e.target.value)}
-                  className={cn(selectClass, "pl-11")}
-                >
-                  {creneauOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
+
+            <div>
+              <span className="text-gray-400 text-sm mb-2 block">Catégorie tarifaire *</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(Object.keys(SLOT_LABELS) as Slot[]).map((s) => {
+                  const Icon = SLOT_ICONS[s];
+                  const active = slot === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSlotAndReset(s)}
+                      className={cn(
+                        "p-3 rounded-xl border transition-all duration-200 text-left",
+                        active
+                          ? "bg-[#02BAD6]/10 border-[#02BAD6] text-[#02BAD6]"
+                          : "bg-gray-800/30 border-white/[0.08] text-gray-300 hover:border-white/[0.15]",
+                      )}
+                    >
+                      <Icon className="w-4 h-4 mb-1.5" />
+                      <p className="text-sm font-semibold">{SLOT_LABELS[s].name}</p>
+                      <p className="text-xs text-gray-500">{SLOT_LABELS[s].time}</p>
+                    </button>
+                  );
+                })}
               </div>
-            </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <span className="text-gray-400 text-sm mb-1.5 block">
+                  Heure de début
+                </span>
+                <div className="relative">
+                  <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className={cn(inputClass, "pl-11")}
+                  />
+                </div>
+              </label>
+              <label className="block">
+                <span className="text-gray-400 text-sm mb-1.5 block">Heure de fin</span>
+                <div className="relative">
+                  <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className={cn(inputClass, "pl-11")}
+                  />
+                </div>
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Horaires modifiables. La catégorie tarifaire reste celle choisie ci-dessus.
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* Personnes */}
+        <SectionCard icon={Users} title="Personnes">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Stepper
+              label="Adultes"
+              icon={User}
+              value={adults}
+              onChange={setAdults}
+              min={0}
+              max={30}
+            />
+            <Stepper
+              label="Enfants"
+              icon={Baby}
+              hint="< 12 ans, tarif -50%"
+              value={children}
+              onChange={setChildren}
+              min={0}
+              max={30}
+            />
+          </div>
+        </SectionCard>
+
+        {/* Repas (optionnel) */}
+        <SectionCard icon={ChefHat} title="Repas (optionnel)">
+          <div className="space-y-4">
+            <div>
+              <span className="text-gray-400 text-sm mb-2 block">Formule</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {([
+                  { v: "", label: "Aucun", price: "" },
+                  { v: "platters_14", label: "Plateaux à partager", price: "14€/pers" },
+                  { v: "menu_19", label: "Menu traditionnel", price: "19€/pers" },
+                ] as { v: FoodFormula | ""; label: string; price: string }[]).map((opt) => {
+                  const active = foodFormula === opt.v;
+                  return (
+                    <button
+                      key={opt.v || "none"}
+                      type="button"
+                      onClick={() => {
+                        setFoodFormula(opt.v);
+                        if (!opt.v) setFoodPersons(0);
+                        else if (foodPersons === 0) setFoodPersons(adults + children);
+                      }}
+                      className={cn(
+                        "p-3 rounded-xl border transition-all duration-200 text-left",
+                        active
+                          ? "bg-[#02BAD6]/10 border-[#02BAD6] text-[#02BAD6]"
+                          : "bg-gray-800/30 border-white/[0.08] text-gray-300 hover:border-white/[0.15]",
+                      )}
+                    >
+                      <p className="text-sm font-semibold">{opt.label}</p>
+                      {opt.price && <p className="text-xs text-gray-500">{opt.price}</p>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {foodFormula && (
+              <div className="max-w-xs">
+                <Stepper
+                  label="Nb personnes au repas"
+                  icon={Users}
+                  value={foodPersons}
+                  onChange={setFoodPersons}
+                  min={0}
+                  max={30}
+                />
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* Remise */}
+        <SectionCard icon={Percent} title="Remise (optionnel)">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Nb personnes *</span>
+              <span className="text-gray-400 text-sm mb-1.5 block">Montant (€)</span>
               <div className="relative">
-                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Euro className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="number"
-                  required
-                  min={1}
-                  max={60}
-                  value={nbPersonnes}
-                  onChange={(e) => setNbPersonnes(Number(e.target.value))}
+                  min={0}
+                  step="0.01"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(Number(e.target.value) || 0)}
                   className={cn(inputClass, "pl-11")}
                 />
               </div>
             </label>
             <label className="block">
-              <span className="text-gray-400 text-sm mb-1.5 block">Formule</span>
-              <select
-                value={formule}
-                onChange={(e) => setFormule(e.target.value)}
-                className={selectClass}
-              >
-                {formuleOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+              <span className="text-gray-400 text-sm mb-1.5 block">Raison</span>
+              <input
+                type="text"
+                value={discountReason}
+                onChange={(e) => setDiscountReason(e.target.value)}
+                className={inputClass}
+                placeholder="Geste commercial, fidélité…"
+              />
             </label>
           </div>
         </SectionCard>
 
-        <SectionCard icon={Euro} title="Tarification">
-          <div>
-            <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-gray-400 text-sm">Montant</span>
-              {montantOverride && (
-                <button
-                  type="button"
-                  onClick={recalculate}
-                  className="text-xs text-[#02BAD6] hover:text-[#00d4f5] underline"
-                >
-                  Recalculer
-                </button>
-              )}
-            </div>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">EUR</span>
-              <input
-                type="number"
-                value={montant}
-                onChange={(e) => {
-                  setMontant(Number(e.target.value));
-                  setMontantOverride(true);
-                }}
-                className={cn(inputClass, "pl-14")}
-              />
-            </div>
-            {breakdown && (
-              <p className="text-gray-500 text-xs mt-2">
-                Base: {breakdown.base} EUR
-                {breakdown.mealUnit > 0 &&
-                  ` + Repas: ${nbPersonnes} x ${breakdown.mealUnit} EUR = ${breakdown.meal} EUR`}
-              </p>
-            )}
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={ClipboardList} title="Statut & Notes">
+        {/* Acompte + Statut + Notes */}
+        <SectionCard icon={ClipboardList} title="Suivi">
           <div className="space-y-4">
             <label
               htmlFor="acompte"
               className={cn(
                 "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-200",
-                acompteRecu
+                depositPaid
                   ? "bg-[#02BAD6]/10 border-[#02BAD6]/30"
                   : "bg-gray-800/30 border-white/[0.06] hover:border-white/[0.12]",
               )}
@@ -496,56 +618,73 @@ export function ReservationForm({
                 <div
                   className={cn(
                     "w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200",
-                    acompteRecu ? "bg-[#02BAD6]/20" : "bg-gray-700/50",
+                    depositPaid ? "bg-[#02BAD6]/20" : "bg-gray-700/50",
                   )}
                 >
-                  <Euro
+                  <Wallet
                     className={cn(
                       "w-4 h-4 transition-colors duration-200",
-                      acompteRecu ? "text-[#02BAD6]" : "text-gray-500",
+                      depositPaid ? "text-[#02BAD6]" : "text-gray-500",
                     )}
                   />
                 </div>
                 <div>
-                  <p className={cn(
-                    "text-sm font-medium transition-colors duration-200",
-                    acompteRecu ? "text-[#02BAD6]" : "text-gray-300",
-                  )}>
-                    Acompte recu
+                  <p
+                    className={cn(
+                      "text-sm font-medium transition-colors duration-200",
+                      depositPaid ? "text-[#02BAD6]" : "text-gray-300",
+                    )}
+                  >
+                    Acompte reçu
                   </p>
-                  <p className="text-xs text-gray-500">
-                    10 EUR via Wero / Revolut / PayPal
-                  </p>
+                  <p className="text-xs text-gray-500">10€ pour confirmer</p>
                 </div>
               </div>
               <div className="relative">
                 <input
                   type="checkbox"
                   id="acompte"
-                  checked={acompteRecu}
-                  onChange={(e) => setAcompteRecu(e.target.checked)}
+                  checked={depositPaid}
+                  onChange={(e) => setDepositPaid(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 rounded-full bg-gray-700 peer-checked:bg-[#02BAD6] transition-colors duration-200" />
                 <div
                   className={cn(
                     "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-                    acompteRecu && "translate-x-5",
+                    depositPaid && "translate-x-5",
                   )}
                 />
               </div>
             </label>
 
+            {depositPaid && (
+              <label className="block">
+                <span className="text-gray-400 text-sm mb-1.5 block">Méthode acompte</span>
+                <select
+                  value={depositMethod}
+                  onChange={(e) => setDepositMethod(e.target.value as DepositMethod)}
+                  className={selectClass}
+                >
+                  {DEPOSIT_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             <label className="block">
               <span className="text-gray-400 text-sm mb-1.5 block">Statut</span>
               <select
-                value={statut}
-                onChange={(e) => setStatut(e.target.value)}
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
                 className={selectClass}
               >
-                {statutOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+                {(Object.keys(STATUS_LABELS) as Status[]).map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>
@@ -558,6 +697,7 @@ export function ReservationForm({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 className={cn(inputClass, "resize-y")}
+                placeholder="Allergies, demandes particulières…"
               />
             </label>
           </div>
@@ -565,11 +705,11 @@ export function ReservationForm({
 
         <motion.button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !date}
           whileTap={{ scale: 0.98 }}
           className={cn(
             "w-full bg-[#02BAD6] hover:bg-[#00d4f5] text-white font-medium rounded-xl py-3 transition-colors flex items-center justify-center gap-2",
-            submitting && "opacity-60 cursor-not-allowed",
+            (submitting || !date) && "opacity-60 cursor-not-allowed",
           )}
         >
           {submitting ? (
@@ -580,129 +720,62 @@ export function ReservationForm({
           ) : (
             <>
               <Save className="w-4 h-4" />
-              Enregistrer la reservation
+              Enregistrer la réservation
             </>
           )}
         </motion.button>
       </form>
 
+      {/* Live price preview — sticky right column on desktop */}
       <aside className="space-y-6 lg:sticky lg:top-24 h-fit">
         <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
               <Euro className="w-4 h-4 text-[#02BAD6]" />
             </div>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant total</h3>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex-1">
+              Total
+            </h3>
+            {estimating && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />}
           </div>
           <div className="p-6">
             <p
-              className="text-4xl font-bold text-[#02BAD6] mb-2"
+              className="text-4xl font-bold text-[#02BAD6] mb-3"
               style={{ textShadow: "0 0 20px rgba(2,186,214,0.3)" }}
             >
-              {montant} EUR
+              {breakdown?.grand_total.toFixed(2) ?? "—"} €
             </p>
-            {breakdown && (
-              <div className="text-gray-500 text-xs space-y-0.5">
-                <p>Base: {breakdown.base} EUR</p>
-                {breakdown.mealUnit > 0 && (
-                  <p>Repas: {nbPersonnes} x {breakdown.mealUnit} EUR = {breakdown.meal} EUR</p>
-                )}
-              </div>
-            )}
-            {montantOverride && (
-              <button
-                type="button"
-                onClick={recalculate}
-                className="mt-3 text-xs text-[#02BAD6] hover:text-[#00d4f5] underline"
-              >
-                Recalculer automatiquement
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setTarifOpen(!tarifOpen)}
-            className="w-full px-6 py-4 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-[#02BAD6]" />
+            <div className="text-gray-500 text-xs space-y-1 mb-4">
+              <p>
+                Tier : <span className="text-gray-300">{tierLabel}</span>
+              </p>
+              {breakdown && (
+                <>
+                  <p>
+                    Adulte : {breakdown.adult_unit_price}€ × {adults} ={" "}
+                    {(breakdown.adult_unit_price * adults).toFixed(2)}€
+                  </p>
+                  {children > 0 && (
+                    <p>
+                      Enfant : {breakdown.child_unit_price}€ × {children} ={" "}
+                      {(breakdown.child_unit_price * children).toFixed(2)}€
+                    </p>
+                  )}
+                  {breakdown.food_total > 0 && (
+                    <p>
+                      Repas ({foodFormula ? FOOD_LABELS[foodFormula].name : ""}) :{" "}
+                      {breakdown.food_total.toFixed(2)}€
+                    </p>
+                  )}
+                  {breakdown.discount > 0 && (
+                    <p className="text-amber-400">
+                      Remise : −{breakdown.discount.toFixed(2)}€
+                    </p>
+                  )}
+                </>
+              )}
             </div>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex-1 text-left">
-              Aide-memoire tarifs
-            </h3>
-            <motion.div animate={{ rotate: tarifOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </motion.div>
-          </button>
-
-          <AnimatePresence initial={false}>
-            {tarifOpen && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "auto" }}
-                exit={{ height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="px-6 pb-6 space-y-4 text-sm text-gray-300">
-                  <div>
-                    <p className="text-gray-500 font-medium mb-2 text-xs uppercase tracking-wider">Creneaux (4h)</p>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-gray-500">
-                          <th className="text-left pb-1" />
-                          <th className="text-right pb-1">6 pers</th>
-                          <th className="text-right pb-1">7-10</th>
-                          <th className="text-right pb-1">11-15</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
-                        <tr>
-                          <td className="py-1.5">Matin / Aprem</td>
-                          <td className="text-right">120</td>
-                          <td className="text-right">140</td>
-                          <td className="text-right">160</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1.5">Soiree</td>
-                          <td className="text-right">150</td>
-                          <td className="text-right">175</td>
-                          <td className="text-right">200</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1.5">Nuit</td>
-                          <td className="text-right">180</td>
-                          <td className="text-right">210</td>
-                          <td className="text-right">240</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-500 font-medium mb-2 text-xs uppercase tracking-wider">Journee complete</p>
-                    <div className="text-xs space-y-0.5">
-                      <p>15-20 pers : 40 EUR/pers</p>
-                      <p>21-30 pers : 35 EUR/pers</p>
-                      <p>31-40 pers : 32 EUR/pers</p>
-                      <p>41-50 pers : 28 EUR/pers</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-gray-500 font-medium mb-2 text-xs uppercase tracking-wider">Options repas</p>
-                    <div className="text-xs space-y-0.5">
-                      <p>+ Plat seul : 10 EUR/pers</p>
-                      <p>+ Menu complet : 15 EUR/pers</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </div>
         </div>
       </aside>
     </div>

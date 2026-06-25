@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { UnauthorizedError, getSchema } from "@/lib/nocodb";
+import { UnauthorizedError, api } from "@/lib/api";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { ReservationForm } from "@/components/admin/ReservationForm";
 import { ReservationList } from "@/components/admin/ReservationList";
 import { List, Loader2, LogOut, Plus, Waves } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-const SESSION_KEY = "nc_token";
+const SESSION_KEY = "noozha_admin_token";
 
 type Tab = "form" | "list";
 
@@ -17,13 +17,15 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("form");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Validate any stored token by calling /me. Failure → clear + show login.
   useEffect(() => {
     const stored = sessionStorage.getItem(SESSION_KEY);
     if (!stored) {
       setChecking(false);
       return;
     }
-    getSchema(stored)
+    api
+      .me(stored)
       .then(() => setToken(stored))
       .catch((err) => {
         if (err instanceof UnauthorizedError) {
@@ -50,6 +52,7 @@ export default function Admin() {
 
   function handleCreated() {
     setRefreshKey((k) => k + 1);
+    setActiveTab("list");
   }
 
   if (checking) {
@@ -66,8 +69,8 @@ export default function Admin() {
   }
 
   const tabs: { key: Tab; label: string; icon: typeof Plus }[] = [
-    { key: "form", label: "Nouvelle reservation", icon: Plus },
-    { key: "list", label: "Reservations", icon: List },
+    { key: "form", label: "Nouvelle réservation", icon: Plus },
+    { key: "list", label: "Réservations", icon: List },
   ];
 
   return (
@@ -107,7 +110,7 @@ export default function Admin() {
             className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Deconnexion</span>
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </div>
       </header>

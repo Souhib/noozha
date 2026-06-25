@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { cn } from "@/lib/utils";
-import { signin } from "@/lib/nocodb";
+import { ApiError, UnauthorizedError, api } from "@/lib/api";
 import { AlertCircle, Loader2, Lock, LogIn, Mail, Waves } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -19,14 +19,16 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     setError("");
     setLoading(true);
     try {
-      const token = await signin(email, password);
-      onLogin(token);
+      const { access_token } = await api.auth.login(email.trim(), password);
+      onLogin(access_token);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erreur de connexion",
-      );
+      if (err instanceof UnauthorizedError || (err instanceof ApiError && err.status === 401)) {
+        setError("Email ou mot de passe incorrect.");
+      } else if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Erreur de connexion.");
+      }
     } finally {
       setLoading(false);
     }
@@ -71,10 +73,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             <input
               type="email"
               required
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 placeholder-gray-600 rounded-xl pl-11 pr-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors"
-              placeholder="admin@noozha.fr"
+              placeholder="souhib.t@hotmail.fr"
             />
           </div>
         </label>
@@ -86,6 +89,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             <input
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 placeholder-gray-600 rounded-xl pl-11 pr-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors"

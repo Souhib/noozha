@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  type NocoDBRecord,
+  ApiError,
+  type Reservation,
+  STATUS_LABELS,
+  type Status,
   UnauthorizedError,
-  deleteRecord,
-  listRecords,
-} from "@/lib/nocodb";
+  api,
+} from "@/lib/api";
 import {
   AlertTriangle,
   CalendarDays,
@@ -24,10 +26,56 @@ interface ReservationListProps {
   refreshKey: number;
 }
 
-function SkeletonRow() {
+const SLOT_SHORT: Record<Reservation["slot"], string> = {
+  morning: "Matinée",
+  afternoon: "Aprem",
+  evening: "Soirée",
+  night: "Nuit",
+};
+
+function StatusBadge({ value }: { value: Status }) {
+  const isConfirmed = value === "confirmed";
+  const isCancelled = value === "cancelled";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap",
+        isConfirmed && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        isCancelled && "bg-red-500/10 text-red-400 border-red-500/20",
+        !isConfirmed && !isCancelled && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      )}
+    >
+      <span
+        className={cn(
+          "w-1.5 h-1.5 rounded-full",
+          isConfirmed && "bg-emerald-400",
+          isCancelled && "bg-red-400",
+          !isConfirmed && !isCancelled && "bg-amber-400",
+        )}
+      />
+      {STATUS_LABELS[value]}
+    </span>
+  );
+}
+
+function formatStartAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function SkeletonRow({ cols }: { cols: number }) {
   return (
     <tr className="animate-pulse">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: cols }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 bg-gray-700/50 rounded w-3/4" />
         </td>
@@ -36,112 +84,68 @@ function SkeletonRow() {
   );
 }
 
-function StatutBadge({ value }: { value: string }) {
-  const lower = value.toLowerCase();
-  const isConfirme = lower.includes("confirm");
-  const isAnnule = lower.includes("annul");
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-        isConfirme && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-        isAnnule && "bg-red-500/10 text-red-400 border-red-500/20",
-        !isConfirme && !isAnnule && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      )}
-    >
-      <span
-        className={cn(
-          "w-1.5 h-1.5 rounded-full",
-          isConfirme && "bg-emerald-400",
-          isAnnule && "bg-red-400",
-          !isConfirme && !isAnnule && "bg-amber-400",
-        )}
-      />
-      {value}
-    </span>
-  );
-}
-
-function formatDate(raw: string): string {
-  try {
-    return new Date(raw).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  } catch {
-    return raw;
-  }
-}
-
-const DISPLAY_COLUMNS = [
-  "Client",
-  "Date",
-  "Creneau",
-  "Nb personnes",
-  "Formule",
-  "Montant",
-  "Statut",
-] as const;
-
-function normalize(str: string): string {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function findField(record: NocoDBRecord, search: string): unknown {
-  const norm = normalize(search);
-  const key = Object.keys(record).find((k) => normalize(k) === norm);
-  return key ? record[key] : undefined;
-}
-
 interface StatsBarProps {
-  records: NocoDBRecord[];
+  rows: Reservation[];
 }
 
-function StatsBar({ records }: StatsBarProps) {
-  const total = records.length;
-  const ca = records.reduce((sum, r) => {
-    const val = findField(r, "Montant");
-    return sum + (typeof val === "number" ? val : Number(val) || 0);
-  }, 0);
-  const confirmees = records.filter((r) => {
-    const s = findField(r, "Statut");
-    return typeof s === "string" && s.toLowerCase().includes("confirm");
-  }).length;
-  const enAttente = total - confirmees - records.filter((r) => {
-    const s = findField(r, "Statut");
-    return typeof s === "string" && s.toLowerCase().includes("annul");
-  }).length;
+function StatsBar({ rows }: StatsBarProps) {
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const confirmed = rows.filter((r) => r.status === "confirmed");
+    const pending = rows.filter((r) => r.status === "pending");
+    const revenue = confirmed.reduce((sum, r) => sum + Number(r.total_price), 0);
+    return { total, revenue, confirmed: confirmed.length, pending: pending.length };
+  }, [rows]);
 
-  const stats = [
-    { label: "Reservations", value: total, icon: CalendarDays, color: "text-[#02BAD6]", bg: "bg-[#02BAD6]/10" },
-    { label: "CA total", value: `${ca} EUR`, icon: Euro, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-    { label: "Confirmees", value: confirmees, icon: CircleCheck, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-    { label: "En attente", value: enAttente, icon: Clock, color: "text-amber-400", bg: "bg-amber-500/10" },
+  const tiles = [
+    {
+      label: "Réservations",
+      value: stats.total,
+      icon: CalendarDays,
+      color: "text-[#02BAD6]",
+      bg: "bg-[#02BAD6]/10",
+    },
+    {
+      label: "CA (confirmées)",
+      value: `${stats.revenue.toFixed(2)} €`,
+      icon: Euro,
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      label: "Confirmées",
+      value: stats.confirmed,
+      icon: CircleCheck,
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+    },
+    {
+      label: "En attente",
+      value: stats.pending,
+      icon: Clock,
+      color: "text-amber-400",
+      bg: "bg-amber-500/10",
+    },
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
+      {tiles.map((t) => {
+        const Icon = t.icon;
         return (
           <div
-            key={stat.label}
+            key={t.label}
             className="bg-gray-900/50 border border-white/[0.08] rounded-2xl p-5"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", stat.bg)}>
-                <Icon className={cn("w-4 h-4", stat.color)} />
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", t.bg)}>
+                <Icon className={cn("w-4 h-4", t.color)} />
               </div>
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {stat.label}
+                {t.label}
               </span>
             </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
+            <p className="text-2xl font-bold text-white">{t.value}</p>
           </div>
         );
       })}
@@ -154,86 +158,113 @@ export function ReservationList({
   onUnauthorized,
   refreshKey,
 }: ReservationListProps) {
-  const [records, setRecords] = useState<NocoDBRecord[]>([]);
+  const [rows, setRows] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<Status | "">("");
 
-  const loadRecords = useCallback(() => {
+  const load = useCallback(() => {
     setLoading(true);
     setError("");
-    listRecords(token)
-      .then((res) => setRecords(res.list))
+    api.reservations
+      .list(token, { status: statusFilter || undefined })
+      .then((res) => setRows(res.reservations))
       .catch((err) => {
         if (err instanceof UnauthorizedError) {
           onUnauthorized();
+        } else if (err instanceof ApiError) {
+          setError(err.message);
         } else {
-          setError(
-            err instanceof Error ? err.message : "Erreur de chargement",
-          );
+          setError("Erreur de chargement.");
         }
       })
       .finally(() => setLoading(false));
-  }, [token, onUnauthorized]);
+  }, [token, statusFilter, onUnauthorized]);
 
   useEffect(() => {
-    loadRecords();
-  }, [loadRecords, refreshKey]);
+    load();
+  }, [load, refreshKey]);
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     setDeleteModalId(null);
     setDeletingId(id);
     try {
-      await deleteRecord(token, id);
-      setRecords((prev) => prev.filter((r) => r.Id !== id));
+      await api.reservations.delete(token, id);
+      setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized();
+      } else if (err instanceof ApiError) {
+        setError(err.message);
       } else {
-        setError(
-          err instanceof Error ? err.message : "Erreur lors de la suppression",
-        );
+        setError("Erreur lors de la suppression.");
       }
     } finally {
       setDeletingId(null);
     }
   }
 
-  if (error) {
-    return (
-      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-        {error}
-      </div>
-    );
-  }
+  const cols = [
+    "Client",
+    "Téléphone",
+    "Date & heure",
+    "Créneau",
+    "Pers.",
+    "Repas",
+    "Total",
+    "Statut",
+  ];
 
   return (
     <div className="space-y-6">
-      {!loading && <StatsBar records={records} />}
+      {!loading && <StatsBar rows={rows} />}
 
       <div className="bg-gray-900/50 border border-white/[0.08] rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#02BAD6]/10 flex items-center justify-center">
               <CalendarDays className="w-4 h-4 text-[#02BAD6]" />
             </div>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Toutes les reservations
+              Toutes les réservations
             </h3>
           </div>
-          {!loading && (
-            <span className="text-xs text-gray-500">{records.length} resultat{records.length !== 1 ? "s" : ""}</span>
-          )}
+          <div className="flex items-center gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as Status | "")}
+              className="bg-gray-800/50 border border-white/[0.08] text-gray-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#02BAD6]"
+            >
+              <option value="">Tous statuts</option>
+              {(Object.keys(STATUS_LABELS) as Status[]).map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            {!loading && (
+              <span className="text-xs text-gray-500">
+                {rows.length} résultat{rows.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         </div>
+
+        {error && (
+          <div className="m-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-800/30 text-gray-500 uppercase text-xs tracking-wider">
               <tr>
-                {DISPLAY_COLUMNS.map((col) => (
-                  <th key={col} className="px-4 py-3 whitespace-nowrap font-medium">
-                    {col}
+                {cols.map((c) => (
+                  <th key={c} className="px-4 py-3 whitespace-nowrap font-medium">
+                    {c}
                   </th>
                 ))}
                 <th className="px-4 py-3" />
@@ -242,84 +273,77 @@ export function ReservationList({
             <tbody className="divide-y divide-white/[0.04]">
               {loading ? (
                 <>
-                  <SkeletonRow />
-                  <SkeletonRow />
-                  <SkeletonRow />
+                  <SkeletonRow cols={cols.length} />
+                  <SkeletonRow cols={cols.length} />
+                  <SkeletonRow cols={cols.length} />
                 </>
-              ) : records.length === 0 ? (
+              ) : rows.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={DISPLAY_COLUMNS.length + 1}
-                    className="px-4 py-16 text-center"
-                  >
+                  <td colSpan={cols.length + 1} className="px-4 py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-gray-800/50 flex items-center justify-center">
                         <CalendarX2 className="w-6 h-6 text-gray-600" />
                       </div>
-                      <p className="text-gray-500 text-sm">Aucune reservation</p>
+                      <p className="text-gray-500 text-sm">Aucune réservation</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                records.map((record, i) => {
-                  const id = record.Id as number;
-                  return (
-                    <tr
-                      key={id ?? i}
-                      className={cn(
-                        "hover:bg-white/[0.02] transition-colors",
-                        deletingId === id && "opacity-50",
+                rows.map((r) => (
+                  <tr
+                    key={r.id}
+                    className={cn(
+                      "hover:bg-white/[0.02] transition-colors",
+                      deletingId === r.id && "opacity-50",
+                    )}
+                  >
+                    <td className="px-4 py-3 text-gray-200 whitespace-nowrap">
+                      {r.customer_name}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
+                      {r.customer_phone}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      {formatStartAt(r.start_at)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      {SLOT_SHORT[r.slot]}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      {r.adults}A{r.children > 0 ? ` + ${r.children}E` : ""}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
+                      {r.food_formula
+                        ? `${r.food_formula === "platters_14" ? "Plateaux" : "Menu"} × ${r.food_persons}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
+                      {Number(r.total_price).toFixed(2)} €
+                      {Number(r.discount_amount) > 0 && (
+                        <span className="text-amber-400 text-xs ml-1">
+                          (−{Number(r.discount_amount).toFixed(0)})
+                        </span>
                       )}
-                    >
-                      {DISPLAY_COLUMNS.map((col) => {
-                        const val = findField(record, col);
-                        if (col === "Statut" && typeof val === "string") {
-                          return (
-                            <td key={col} className="px-4 py-3">
-                              <StatutBadge value={val} />
-                            </td>
-                          );
-                        }
-                        if (col === "Date" && typeof val === "string") {
-                          return (
-                            <td key={col} className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                              {formatDate(val)}
-                            </td>
-                          );
-                        }
-                        if (col === "Montant" && val != null) {
-                          return (
-                            <td key={col} className="px-4 py-3 text-white font-medium">
-                              {String(val)} EUR
-                            </td>
-                          );
-                        }
-                        return (
-                          <td
-                            key={col}
-                            className="px-4 py-3 text-gray-300 whitespace-nowrap"
-                          >
-                            {val != null ? String(val) : "-"}
-                          </td>
-                        );
-                      })}
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => setDeleteModalId(id)}
-                          disabled={deletingId === id}
-                          className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                        >
-                          {deletingId === id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge value={r.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteModalId(r.id)}
+                        disabled={deletingId === r.id}
+                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === r.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -347,11 +371,9 @@ export function ReservationList({
                   <AlertTriangle className="w-6 h-6 text-red-400" />
                 </div>
                 <h3 className="text-white font-semibold text-lg mb-1">
-                  Supprimer cette reservation ?
+                  Supprimer cette réservation ?
                 </h3>
-                <p className="text-gray-400 text-sm">
-                  Cette action est irreversible.
-                </p>
+                <p className="text-gray-400 text-sm">Action irréversible.</p>
               </div>
               <div className="flex gap-3">
                 <button
