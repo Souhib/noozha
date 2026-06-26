@@ -21,7 +21,7 @@ export default function Admin() {
 
   // Validate any stored token by calling /me. Failure → clear + show login.
   useEffect(() => {
-    const stored = sessionStorage.getItem(SESSION_KEY);
+    const stored = localStorage.getItem(SESSION_KEY);
     if (!stored) {
       setChecking(false);
       return;
@@ -31,24 +31,24 @@ export default function Admin() {
       .then(() => setToken(stored))
       .catch((err) => {
         if (err instanceof UnauthorizedError) {
-          sessionStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(SESSION_KEY);
         }
       })
       .finally(() => setChecking(false));
   }, []);
 
   function handleLogin(newToken: string) {
-    sessionStorage.setItem(SESSION_KEY, newToken);
+    localStorage.setItem(SESSION_KEY, newToken);
     setToken(newToken);
   }
 
   const handleUnauthorized = useCallback(() => {
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
     setToken(null);
   }, []);
 
   function handleLogout() {
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
     setToken(null);
   }
 

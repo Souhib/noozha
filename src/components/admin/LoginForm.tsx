@@ -77,7 +77,6 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-gray-800/50 border border-white/[0.08] text-gray-50 placeholder-gray-600 rounded-xl pl-11 pr-4 py-3 focus:border-[#02BAD6] focus:ring-2 focus:ring-[#02BAD6]/20 focus:outline-none hover:border-white/[0.15] transition-colors"
-              placeholder="souhib.t@hotmail.fr"
             />
           </div>
         </label>
